@@ -1,0 +1,39 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dhis2-db-backup
+data:
+  dhis2_db_backup.sh: "{{ lookup('template', 'templates/dhis2/db_backup.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-dhis2-db
+spec:
+  schedule: "17 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: dhis2-db-backup
+            image: postgres:13
+            command: ['bash', '-c']
+            args:
+              - bash /tmp/dhis2_db_backup.sh
+
+            volumeMounts:
+              - mountPath: /tmp/dhis2_db_backup.sh
+                name: dhis2-db-backup
+                readOnly: true
+                subPath: dhis2_db_backup.sh
+
+          restartPolicy: Never
+          volumes:
+            - secret:
+                secretName: dhis2-db-backup
+              name: dhis2-db-backup
+      backoffLimit: 1

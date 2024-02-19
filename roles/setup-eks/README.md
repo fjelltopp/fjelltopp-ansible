@@ -1,0 +1,41 @@
+Role Name
+=========
+
+Simple role for setting up AWS EKS cluster including dedicated VPC and worker nodes. Uses official Cloudformation templates where possible
+
+Requirements
+------------
+
+
+Role Variables
+--------------
+eks_cluster_name: "ckan"
+eks_stack_name: "fjelltopp-eks"
+eks_vpc_cidr_block: "172.17.0.0/16"
+eks_vpc_cidr_subnet1: "172.17.0.0/18"
+eks_vpc_cidr_subnet2: "172.17.64.0/18"
+eks_vpc_cidr_subnet3: "172.17.128.0/18"
+eks_worker_nodes_min: 1
+eks_worker_nodes_max: 3
+eks_worker_nodes_desired: 1
+eks_worker_instance_type: "t3.medium"
+eks_worker_ami_id: "ami-0607bdd6d5e5d9050"
+aws_sso_role_path: "/aws-reserved/sso.amazonaws.com/eu-west-1/"
+giftless_s3_bucket: ""
+cloudwatch_logs_retention: "30"
+
+Dependencies
+------------
+
+
+Example Playbook
+----------------
+
+
+License
+-------
+
+GPL2.0
+
+Author Information
+------------------

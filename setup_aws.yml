@@ -1,0 +1,23 @@
+- hosts: all
+  connection: local
+  become: false
+
+  pre_tasks:
+    - name: Downloading required collections
+      command: "ansible-galaxy collection install -r roles/requirements.yml --force"
+      delegate_to: localhost
+      changed_when: false
+      become: false
+      tags: setup
+
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: setup-eks, tags: ["setup", "all", "eks"] }
+    - { role: setup-rds, tags: ["setup", "all"] }
+    - { role: setup-efs, tags: ["setup", "all"] }
+    - { role: datadog-k8s,
+        when: datadog_api_key is defined,
+        tags: ["setup", "all", "eks", "datadog"] }
+

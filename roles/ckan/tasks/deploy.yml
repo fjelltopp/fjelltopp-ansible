@@ -1,0 +1,128 @@
+---
+- name: Create CKAN namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: obtain ACM certficate info
+  community.aws.aws_acm_info:
+    aws_region: "{{ aws_region }}"
+    domain_name: "{{ ckan_tls_name }}"
+  when: ckan_tls_name is defined
+  register: certificate_acm
+  become: false
+
+- name: Display ACM arn
+  ansible.builtin.debug:
+    var: certificate_acm.certificates[0].certificate_arn
+  when: show_debug_output is defined
+
+- name: Get information about an RDS CKAN instance
+  community.aws.rds_instance_info:
+    region: "{{ aws_region }}"
+    db_instance_identifier: "{{ application_namespace }}-rds"
+  when: fjelltopp_env_type != 'local'
+  register: ckan_rds_info
+
+- name: Deploy Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - nginx-ingress-tls-elb_v1_0_0.yaml
+  when: ckan_tls_name is defined
+
+- name: Patch Minikube ingress
+  kubernetes.core.k8s:
+    state: patched
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "ingress-nginx"
+    name: "ingress-nginx-controller"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - local_ingress_patch.yaml
+  when: fjelltopp_env_type == 'local'
+
+- name: Open internal services on Minikube
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - local_ingress.yaml
+  when: fjelltopp_env_type == 'local'
+
+- name: Setup Database
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - db.yaml
+  # FIP-3 TODO
+  # Commented out for now, as there's a hardcoded db name in ckan_bootstrap, fix requires a custom
+  # container image
+  # when: fjelltopp_env_type == 'local'
+
+# Based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore
+- name: Init CKAN schema in RDS
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - ckandb_job.yaml
+  when: fjelltopp_env_type != 'local'
+
+- name: Deploy CKAN
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - solr.yaml
+    - datapusher.yaml
+    - redis.yaml
+    - giftless.yaml
+    - giftless_ingress.yaml
+    - ckan_volumes.yaml
+    - ckan.yaml
+    - ckan_ingress.yaml
+    - ckan_cronjob.yaml
+
+- name: Setup backup job
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'prod'
+  with_items:
+    - db_backup_cronjob.yaml
+
+- name: Setup db restore job
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type != 'prod' and restore_production_backup
+  with_items:
+    - db_restore_cronjob.yaml

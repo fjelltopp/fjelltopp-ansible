@@ -1,0 +1,64 @@
+{% if basic_http_auth %}
+---
+apiVersion: v1
+data:
+  auth: {{ basic_http_auth_secret }}
+kind: Secret
+metadata:
+  name: basic-auth
+type: Opaque
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ckan-api-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+spec:
+  rules:
+    - host: "{{ ckan_fqdn }}"
+      http:
+        paths:
+          - path: /api/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: ckan
+                port:
+                  name: ckan
+          - path: /dataset/(.*)/resource/(.*)/download/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: ckan
+                port:
+                  name: ckan
+{% endif %}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ckan-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+{% if basic_http_auth %}
+    # Basic http auth
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Authentication Required for {{ ckan_fqdn }} '
+{% endif %}
+spec:
+  rules:
+    - host: "{{ ckan_fqdn }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ckan
+                port:
+                  name: ckan

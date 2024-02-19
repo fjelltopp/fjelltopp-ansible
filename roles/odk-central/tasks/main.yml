@@ -1,0 +1,13 @@
+---
+- name: Load default variables
+  include_vars: secrets.yml
+  when: fjelltopp_env_type != 'local'
+
+- include: ./secrets.yml
+  when: fjelltopp_env_type != 'local'
+
+- include_role:
+    name: k8s-context
+  when: fjelltopp_env_type == 'local'
+
+- include: ./deploy.yml

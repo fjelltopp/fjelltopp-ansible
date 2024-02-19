@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: odk
+    component: db
+  name: odk-pg-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: odk
+    component: db
+  name: odk-db
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odk
+      component: db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: odk
+        component: db
+    spec:
+      containers:
+        - env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/db
+            - name: POSTGRES_PASSWORD
+              value: "{{ odk_postgres_password }}"
+            - name: POSTGRES_USER
+              value: "{{ odk_db_user }}"
+          image: "{{ odk_postgresql_image }}"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - "{{ odk_db_user }}"
+          name: odk-db
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: pg-data
+      restartPolicy: Always
+      volumes:
+        - name: pg-data
+          persistentVolumeClaim:
+            claimName: odk-pg-data
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: odk
+    component: db
+  name: odk-db
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: odk
+    component: db
+status:
+  loadBalancer: {}
+

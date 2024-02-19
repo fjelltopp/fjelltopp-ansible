@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-keys
+data:
+  jwt-rs256.key: "{{ ckan_jwt_private_key |string | b64encode }}"
+  jwt-rs256.key.pub: "{{ ckan_jwt_public_key|string | b64encode  }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: giftless-config
+data:
+  giftless.yaml: "{{ lookup('template', 'templates/ckan/giftless_config.yaml') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: giftless
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: 
+      app: giftless
+  template:
+    metadata:
+      labels: 
+        app: giftless
+    spec:
+      containers:
+      - command:
+        - uwsgi
+        - -M
+        - -T
+        - --threads
+        - "2"
+        - -p
+        - "2"
+        - --manage-script-name
+        - --callable
+        - app
+        - --http
+        - 0.0.0.0:5001
+        env:
+        - name: GIFTLESS_DEBUG
+          value: "1"
+        - name: GIFTLESS_CONFIG_FILE
+          value: /app/giftless.yaml
+        image: "{{ giftless_image }}:{{ giftless_version }}"
+        name: giftless
+        ports:
+        - containerPort: 5001
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /app/jwt-rs256.key.pub
+          name: jwt-key-pub
+          readOnly: true
+          subPath: jwt-rs256.key.pub
+        - mountPath: /app/giftless.yaml
+          name: giftless-config
+          readOnly: true
+          subPath: giftless.yaml
+      volumes:
+      - secret:
+          secretName: jwt-keys
+        name: jwt-key-pub
+      - secret:
+          secretName: giftless-config
+        name: giftless-config
+
+---
+apiVersion: v1
+kind: Service
+metadata: 
+  name: giftless
+{% if fjelltopp_env_type != 'local' %}
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ certificate_acm.certificates[0].certificate_arn }}
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "giftless-http"
+{% endif %}
+spec:
+  ports:
+  - name: 'giftless-http'
+    port: 5001
+  selector: 
+    app: giftless
+

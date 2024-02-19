@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+data:
+  mapRoles: |
+    - rolearn: {{ k8s_nodes_output.stack_outputs.NodeInstanceRole }}{% raw %}
+      username: system:node:{{EC2PrivateDNSName}}
+{% endraw %}
+      groups:
+        - system:bootstrappers
+        - system:nodes
+{% if sso_admin_role_arn[0] is defined %}
+    - rolearn: {{ sso_admin_role_arn[0]|regex_replace('\/aws-reserved\/sso\.amazonaws\.com\/','\/') }}{% raw %}
+      username: adminuser:{{SessionName}}
+{% endraw %}
+      groups:
+        - system:masters
+{% endif %}
+    - rolearn: {{ jenkins_iam_role_output.arn }}{% raw %}
+      username: adminuser:Jenkins
+{% endraw %}
+      groups:
+        - system:masters
+    - rolearn: {{ eks_jenkins_iam_role }}{% raw %}
+      username: adminuser:Jenkins
+{% endraw %}
+      groups:
+        - system:masters
+{% if eks_iam_admin_account is defined %}
+  mapUsers: |
+    - userarn: {{ eks_iam_admin_account }}{% raw %}
+      username: admin
+{% endraw %}
+      groups:
+        - system:masters
+{% endif %}

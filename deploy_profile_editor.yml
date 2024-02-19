@@ -1,0 +1,5 @@
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: profile-editor, tags: ["deploy", "all"] }

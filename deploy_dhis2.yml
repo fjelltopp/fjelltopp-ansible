@@ -1,0 +1,6 @@
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: dhis2, tags: ["deploy", "all", "dhis2"] }
+    - { role: odk-central, tags: ["deploy", "all", "odk-central"] }

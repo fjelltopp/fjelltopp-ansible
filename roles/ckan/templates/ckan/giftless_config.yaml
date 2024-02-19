@@ -1,0 +1,23 @@
+TRANSFER_ADAPTERS:
+  basic:
+    factory: giftless.transfer.basic_streaming:factory
+    options:
+{% if giftless_s3_bucket is defined %}
+      storage_class: giftless.storage.amazon_s3:AmazonS3Storage
+      storage_options:
+        bucket_name: {{ giftless_s3_bucket }}
+{% else %}
+      storage_class: giftless.storage.local_storage:LocalStorage
+{% endif %}
+AUTH_PROVIDERS:
+  - factory: giftless.auth.jwt:factory
+    options:
+      algorithm: RS256
+      public_key_file: /app/jwt-rs256.key.pub
+MIDDLEWARE:
+  - class: werkzeug.middleware.proxy_fix:ProxyFix
+    kwargs:
+      x_host: 1
+      x_port: 1
+      x_prefix: 1
+

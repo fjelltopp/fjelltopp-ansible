@@ -1,0 +1,90 @@
+---
+- include_role:
+    name: k8s-context
+  when: fjelltopp_env_type == 'local'
+
+- name: Create Navigator namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: obtain ACM certficate info
+  community.aws.aws_acm_info:
+    aws_region: "{{ aws_region }}"
+    domain_name: "{{ navigator_tls_name }}"
+  when: navigator_tls_name is defined
+  register: certificate_acm
+  become: false
+
+- name: Display ACM arn
+  ansible.builtin.debug:
+    var: certificate_acm.certificates[0].certificate_arn
+  when: show_debug_output is defined
+
+- name: Get information about an RDS instance
+  community.aws.rds_instance_info:
+    region: "{{ aws_region }}"
+    db_instance_identifier: "{{ application_namespace }}-rds"
+  when: fjelltopp_env_type != 'local'
+  register: navigator_rds_info
+
+- name: Deploy Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: navigator_tls_name is defined
+  with_items:
+    - nginx-ingress-tls-elb_v1_0_0.yaml
+
+- name: Setup Database
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'local'
+  with_items:
+    - db.yaml
+
+- name: Init Database Schema
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - db_setup_job.yaml
+
+- name: Deploy Navigator
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - navigator_engine.yaml
+    - navigator_api.yaml
+    - navigator_ui.yaml
+    - navigator_ingress.yaml
+
+- name: Setup backup job
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'prod'
+  with_items:
+    - db_backup_cronjob.yaml
+

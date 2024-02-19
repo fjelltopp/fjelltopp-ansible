@@ -1,0 +1,169 @@
+# mount local minikube disk
+{% if fjelltopp_env_type == 'local' %}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nav-ui-localpath
+  labels:
+    app: navigator-ui
+spec:
+  storageClassName: standard
+  claimRef:
+    name: nav-ui-localpath
+    namespace: {{ application_namespace }}
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  hostPath:
+    path: /minikube-host/navigator_ui/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-ui
+  name: nav-ui-localpath
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: nav-ui-localpath
+status: {}
+---
+{% endif %}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-ui
+  name: navigator-ui
+spec:
+  selector:
+    matchLabels:
+      app: navigator-ui
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: navigator-ui
+    spec:
+      containers:
+        - env:
+            - name: NEXT_PUBLIC_CKAN_SITE_URL
+              value: {{ ckan_site_url }}
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: {{ navigator_api_base_url }}
+            - name: NODE_ENV
+              value: {{ navigator_node_env_type }}
+            - name: NEXT_TELEMETRY_DISABLED
+              value: "1"
+            - name: NEXT_PUBLIC_ENV_TYPE
+              value: {{ fjelltopp_env_type }}
+            - name: AUTH0_SECRET
+              value: {{ navigator_ui_auth0_secret }}
+            - name: AUTH0_BASE_URL
+              value: {{ navigator_ui_auth0_base_url }}
+            - name:  AUTH0_ISSUER_BASE_URL
+              value: {{ navigator_auth0_issuer_base_url }}
+            - name:  AUTH0_CLIENT_ID
+              value: {{ navigator_ui_auth0_client_id }}
+            - name:  AUTH0_CLIENT_SECRET
+              value: {{ navigator_ui_auth0_client_secret }}
+            - name: AUTH0_AUDIENCE
+              value: {{ navigator_auth0_audience }}
+            - name: AUTH0_SCOPE
+              value: 'openid profile email'
+{% if fjelltopp_env_type != 'local' %}
+            - name: NEXT_PUBLIC_SENTRY_DSN
+              value: {{ navigator_ui_sentry_dsn }}
+            - name: NEXT_PUBLIC_GA_ID
+              value: {{ navigator_ga_id }}
+            - name: SENTRY_AUTH_TOKEN
+              value: {{ lookup('aws_secret', 'jenkins_navigator_ui_sentry_token' , region = aws_region ) }}
+{% endif %}
+          image: {{ navigator_ui_image }}:{{ navigator_ui_image_tag }}
+{% if fjelltopp_env_type == 'local' %}
+          imagePullPolicy: IfNotPresent
+{% else %}
+          imagePullPolicy: Always
+{% endif %}
+          name: navigator-ui
+# use local user uid
+{% if fjelltopp_env_type == 'local' %}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+{% endif %}
+
+{% if fjelltopp_env_type == 'local' %}
+          command: ['sh', '-c', 'cd /app; yarn install; yarn compile; yarn dev']
+{% else %}
+          command: ['sh', '-c', 'cd /app; yarn compile; yarn build; yarn start']
+{% endif %}
+
+# disable healthcheck on local dev
+{% if fjelltopp_env_type != 'local' %}
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+{% endif %}
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+{% if fjelltopp_env_type == 'local' %}
+            - mountPath: /app
+              name: nav-ui-localpath
+      volumes:
+        - name: navigator-ui-volume
+          emptyDir: {}
+        - name: nav-ui-localpath
+          persistentVolumeClaim:
+            claimName: nav-ui-localpath
+{% endif %}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-ui
+  name: navigator-ui
+spec:
+  ports:
+    - name: "navigator-ui"
+      port: 3000
+      targetPort: 3000
+  selector:
+    app: navigator-ui
+status:
+  loadBalancer: {}
+

@@ -1,0 +1,3 @@
+---
+# defaults file for datadog-k8s
+datadog_collect_logs: false

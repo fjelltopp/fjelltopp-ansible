@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: giftless-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/x-forwarded-prefix: "/giftless"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      if ($arg_filename ~ .*pdf$) {
+        add_header content-type "application/pdf";
+      }
+spec:
+  rules:
+    - host: "{{ ckan_fqdn }}"
+      http:
+        paths:
+          - path: /giftless/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: giftless
+                port:
+                  name: giftless-http

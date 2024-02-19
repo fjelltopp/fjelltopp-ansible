@@ -1,0 +1,85 @@
+---
+
+- name: Get EKS Worker nodes sec group id
+  community.aws.ec2_instance_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Name": "{{ eks_cluster_name }}-{{ eks_stack_name }}-worker-nodes-Node"
+      instance-state-name: [ "running"]
+  register: eks_node_info
+  become: false
+
+- name: Display Security group id
+  ansible.builtin.debug:
+    var: eks_node_info.instances[0].network_interfaces[0].groups[0].group_id
+  when: show_debug_output is defined
+
+
+- name: RDS security group
+  amazon.aws.ec2_group:
+    name: "{{ application_namespace }}-rds-sg"
+    description: "Access for {{ eks_cluster_name }} EKS cluster"
+    vpc_id: "{{ vpc_output.stack_outputs.VpcId }}"
+    region: "{{ aws_region }}"
+    rules:
+      - proto: tcp
+        from_port: 5432
+        to_port: 5432
+        group_id: "{{ eks_node_info.instances[0].network_interfaces[0].groups[0].group_id }}"
+  register: rds_sg_output
+  become: false
+  
+- name: Create RDS subnet group
+  community.aws.rds_subnet_group:
+    region: "{{ aws_region }}"
+    state: present
+    name: "{{ application_namespace }}-group"
+    description: "{{ application_namespace }} subnet group"
+    subnets: "{{ vpc_output.stack_outputs.SubnetIds }}"
+
+- name: Create RDS password if missing
+  block:
+    - name: Generate password
+      set_fact:
+        new_rds_admin_password: "{{lookup('community.general.random_string', length=32, special=false)}}"
+      when: not rds_admin_password|default(None)
+
+    - name: Add string to AWS Secrets Manager
+      community.aws.aws_secret:
+        region: "{{ aws_region }}"
+        name: "{{application_namespace}}_rds_admin_pw"
+        state: present
+        secret_type: 'string'
+        secret: "{{ new_rds_admin_password }}"
+      when: not rds_admin_password|default(None)
+
+    - name: Update rds_admin_password
+      set_fact:
+        rds_admin_password: "{{ new_rds_admin_password }}"
+      when: new_rds_admin_password|default(None)
+  become: false
+
+- name: Setup RDS
+  community.aws.rds_instance:
+    state: present
+    region: "{{ aws_region }}"
+    db_instance_identifier: "{{ application_namespace }}-rds"
+    engine: postgres
+    engine_version: "{{ rds_postgres_version }}"
+    allocated_storage: "{{ rds_storage_size }}"
+    instance_type: "{{ rds_instance_type }}"
+    vpc_security_group_ids: "{{ rds_sg_output.group_id }}"
+    subnet_group: "{{ application_namespace }}-group"
+    publicly_accessible: false
+    multi_az: "{{ rds_multi_AZ }}"
+    backup_retention_period: "{{ rds_backup_retention }}"
+    apply_immediately: true
+    auto_minor_version_upgrade: true
+    master_username: "{{ rds_admin_username }}"
+    master_user_password: "{{ rds_admin_password }}"
+    storage_encrypted: true
+    storage_type: "standard"
+    tags:
+      Env_type: "{{ fjelltopp_env_type }}"
+      Application: "{{ ckan_fqdn }}"
+  become: false

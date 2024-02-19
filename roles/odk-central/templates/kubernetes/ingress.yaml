@@ -1,0 +1,38 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: odk-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_input_headers "Referrer-Policy: same-origin";
+      more_set_input_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_input_headers "X-Content-Type-Options: nosniff";
+
+spec:
+  defaultBackend:
+    service:
+      name: odk-frontend
+      port:
+        name: http
+  rules:
+  - host: "{{ odk_fqdn }}"
+    http:
+      paths:
+      - path: /-
+        pathType: Prefix
+        backend:
+          service:
+            name: enketo
+            port:
+              number: 8005
+      - path: /v\d
+        pathType: Prefix
+        backend:
+          service:
+            name: odk
+            port:
+              number: 8383

@@ -1,0 +1,115 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ckan-db-restore
+data:
+  ckan_db_restore.sh: "{{ lookup('template', 'templates/ckan/db_restore.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: restore-ckan-db
+spec:
+  schedule: "17 5 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          initContainers:
+          - env:
+              - name: POSTGRES_HOSTNAME
+                value: "{{ ckan_rds_info.instances[0].endpoint.address }}"
+              - name: POSTGRES_USER
+                value: "{{ rds_admin_username }}"
+              - name: POSTGRES_PASSWORD
+                value: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
+            name: ckan-db-restore
+            image: postgres:13
+            command: ['bash', '-c']
+            args:
+              - bash /tmp/ckan_db_restore.sh
+
+            volumeMounts:
+              - mountPath: /tmp/ckan_db_restore.sh
+                name: ckan-db-restore
+                readOnly: true
+                subPath: ckan_db_restore.sh
+              - mountPath: /tmp/ckan_db_bootstrap.sh
+                name: ckan-db-bootstrap
+                readOnly: true
+                subPath: ckan_db_bootstrap.sh
+              - mountPath: /tmp/ckan_db_bootstrap.sql
+                name: ckan-db-bootstrap
+                readOnly: true
+                subPath: ckan_db_bootstrap.sql
+          containers:
+            - env:
+                - name: CKAN_DATAPUSHER_URL
+                  value: {{ ckan_datapusher_url }}
+                - name: CKAN_DATASTORE_READ_URL
+                  value: {{ ckan_datastore_read_url }}
+                - name: CKAN_DATASTORE_WRITE_URL
+                  value: {{ ckan_datastore_write_url }}
+                - name: CKAN_MAX_UPLOAD_SIZE_MB
+                  value: "{{ ckan_max_upload_size_mb }}"
+                - name: CKAN_REDIS_URL
+                  value: "{{ ckan_redis_url }}"
+                - name: CKAN_SITE_URL
+                  value: "{{ ckan_site_url }}"
+                - name: CKAN_SOLR_URL
+                  value: "{{ ckan_solr_url }}"
+                - name: CKAN_SQLALCHEMY_URL
+                  value: {{ ckan_sqlalchemy_url }}
+                - name: DS_RO_PASS
+                  value: "{{ ckan_ds_ro_pass }}"
+                - name: POSTGRES_PASSWORD
+                  value: "{{ ckan_postgres_password }}"
+                - name: PIPENV_DONT_LOAD_ENV
+                  value: "1"
+              image: {{ ckan_image }}:{{ ckan_image_tag }}
+              command: ['bash', '-c']
+              args:
+                - cd /usr/lib/ckan/;
+                  export HOME=/usr/lib/ckan/;
+                  pipenv run ckan -c /etc/ckan/production.ini search-index rebuild 
+
+              imagePullPolicy: Always
+              name: ckan
+              resources: {}
+              volumeMounts:
+                - mountPath: /var/lib/ckan/storage
+                  name: ckan-storage
+                - mountPath: /var/lib/ckan/webassets
+                  name: ckan-webassets
+                - mountPath: /var/lib/ckan/resources
+                  name: ckan-resources
+                - name: ckan-configs
+                  mountPath: /etc/ckan
+                  readOnly: true
+
+          restartPolicy: Never
+          volumes:
+            - secret:
+                secretName: ckan-db-restore
+              name: ckan-db-restore
+            - secret:
+                secretName: ckan-db-bootstrap
+              name: ckan-db-bootstrap
+            - name: ckan-storage
+              persistentVolumeClaim:
+                claimName: ckan-storage
+            - name: ckan-webassets
+              persistentVolumeClaim:
+                claimName: ckan-webassets
+            - name: ckan-resources
+              persistentVolumeClaim:
+                claimName: ckan-resources
+            - name: ckan-configs
+              secret:
+                secretName: ckan-configs
+
+
+      backoffLimit: 1

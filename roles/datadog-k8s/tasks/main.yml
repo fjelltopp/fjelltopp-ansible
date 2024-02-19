@@ -1,0 +1,38 @@
+- name: Create DataDog namespace
+  kubernetes.core.k8s:
+    name: "datadog"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: Add DataDog HELM repository
+  kubernetes.core.helm_repository:
+    name: datadog
+    repo_url: https://helm.datadoghq.com
+  become: false
+
+- name: Deploy DataDog
+  kubernetes.core.helm:
+    update_repo_cache: yes
+    name: datadog
+    chart_repo_url: https://helm.datadoghq.com
+    chart_ref: datadog
+    namespace: datadog
+    kubeconfig: "{{ kubeconfig }}"
+    values:
+      registry: "public.ecr.aws/datadog"
+      datadog:
+        clusterName: "{{ eks_cluster_name }}"
+        apiKey: "{{ datadog_api_key }}"
+        site: datadoghq.eu
+        kubeStateMetricsEnabled: true
+        logs:
+          enabled: "{{ datadog_collect_logs }}"
+          containerCollectAll: true
+        prometheusScrape:
+          enabled: true
+      targetSystem: "linux"      
+  become: false
+

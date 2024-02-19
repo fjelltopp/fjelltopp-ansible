@@ -1,0 +1,117 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dhis2-configs
+data:
+  dhis.conf: "{{ lookup('template', 'templates/dhis2/dhis.conf') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tomcat-configs
+data:
+  server.xml: "{{ lookup('template', 'templates/dhis2/server.xml') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: dhis2
+  name: dhis2-data
+spec:
+{% if fjelltopp_env_type != 'local' %}
+  storageClassName: "efs-client"
+{% endif %}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dhis2
+  name: dhis2
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: dhis2
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: dhis2
+    spec:
+      containers:
+        - env:
+            - name: DHIS2_HOME
+              value: /etc/dhis2/
+            - name: JAVA_OPTS
+              value: {{ dhis2_java_opts }}
+
+          image: {{ tomcat_image }}
+          imagePullPolicy: Always
+          name: dhis2
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: dhis2-configs
+              mountPath: /etc/dhis2/dhis.conf
+              subPath: dhis.conf
+            - mountPath: /etc/dhis2
+              name: dhis2-data
+            - name: tomcat-configs
+              mountPath: /usr/local/tomcat/conf/server.xml
+              subPath: server.xml
+      restartPolicy: Always
+      volumes:
+        - name: dhis2-configs
+          secret:
+            secretName: dhis2-configs
+        - name: tomcat-configs
+          secret:
+            secretName: tomcat-configs
+        - name: dhis2-data
+          persistentVolumeClaim:
+            claimName: dhis2-data
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dhis2
+  name: dhis2
+spec:
+  ports:
+    - name: "dhis2"
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: dhis2
+status:
+  loadBalancer: {}
+

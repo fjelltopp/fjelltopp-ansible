@@ -1,0 +1,6 @@
+psql -U postgres -c "CREATE DATABASE navigator_engine ENCODING UTF8;"
+psql -U postgres -c "CREATE DATABASE navigator_api ENCODING UTF8;"
+psql -U postgres -c "CREATE ROLE engine WITH PASSWORD 'password';"
+psql -U postgres -c "GRANT ALL ON DATABASE navigator_engine TO engine;"
+psql -U postgres -c "CREATE ROLE api WITH PASSWORD 'password';"
+psql -U postgres -c "GRANT ALL ON DATABASE navigator_api TO api;"

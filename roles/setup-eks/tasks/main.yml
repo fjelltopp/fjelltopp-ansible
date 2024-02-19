@@ -1,0 +1,232 @@
+- name: Create Cloudwatch log policy for workers
+  community.aws.iam_managed_policy:
+    policy_name: eks-cloudwatch-sync
+    state: present
+    policy: "{{ lookup( 'template', 'cloudwatch-iam-policy.json') }}"
+  register: cloudwatch_policy_output
+  become: false
+
+- name: Create Jenkins EKS access policy
+  community.aws.iam_managed_policy:
+    policy_name: eks-secrets-access-policy
+    state: present
+    policy: "{{ lookup( 'template', 'eks_secrets_access_policy.json') }}"
+  register: jenkins_eks_policy_output
+  become: false
+
+- name: Show Jenkins EKS access policy ARN
+  ansible.builtin.debug:
+    var: jenkins_eks_policy_output
+  when: show_debug_output is defined
+
+
+- name: Create IAM role for EKS cluster
+  iam_role:
+    name: "{{ eks_cluster_name }}_role"
+    managed_policy:
+      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      - "{{ cloudwatch_policy_output.policy.arn }}"
+    state: present
+    assume_role_policy_document: "{{ lookup('file','iam-role-trust-policy.json') }}"
+    description: "IAM role for EKS cluster {{ eks_cluster_name }}"
+  register: iam_output
+  become: false
+
+- name: Create cross-account Jenkins IAM role
+  iam_role:
+    name: "Fjelltopp-cross-account-role"
+    managed_policy:
+      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+      - "{{ jenkins_eks_policy_output.policy.arn }}"
+    state: present
+    assume_role_policy_document: "{{ lookup('template','jenkins-crossaccount-iam-role-trust-policy.json') }}"
+    description: "IAM role for cross-account Jenkins access to EKS cluster {{ eks_cluster_name }} and secrets"
+  register: jenkins_iam_role_output
+  become: false
+
+- name: Create dedicated VPC (with Cloudformation)
+  cloudformation:
+    aws_region: "{{ aws_region }}"
+    stack_name: "{{ eks_stack_name }}-vpc"
+    state: "present"
+    disable_rollback: no
+    # https://docs.aws.amazon.com/eks/latest/userguide/create-public-private-vpc.html
+    # https://aws-quickstart.github.io/quickstart-amazon-eks/
+    # template_url: "https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2018-11-07/amazon-eks-vpc-sample.yaml"
+    # https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/amazon-eks-fully-private-vpc.yaml 
+    # https://s3.amazonaws.com/aws-quickstart/quickstart-amazon-eks/templates/amazon-eks-entrypoint-new-vpc.template.yaml
+    template_url: https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/amazon-eks-vpc-sample.yaml
+    template_parameters:
+      VpcBlock: "{{ eks_vpc_cidr_block }}"
+      Subnet01Block: "{{ eks_vpc_cidr_subnet1 }}"
+      Subnet02Block: "{{ eks_vpc_cidr_subnet2 }}"
+      Subnet03Block: "{{ eks_vpc_cidr_subnet3 }}"
+  become: false
+  register: vpc_output
+
+- name: Display VPC subnets
+  ansible.builtin.debug:
+    var: vpc_output.stack_outputs.SubnetIds
+  when: show_debug_output is defined
+
+- name: Create EKS cluster (aws_eks_cluster)
+  aws_eks_cluster:
+    aws_region: "{{ aws_region }}"
+    name: "{{ eks_cluster_name }}"
+    state: present
+    version: "{{ k8s_version }}"
+    role_arn: "{{ iam_output.arn }}"
+    subnets: "{{ vpc_output.stack_outputs.SubnetIds }}"
+    security_groups: "{{ vpc_output.stack_outputs.SecurityGroups }}"
+    wait: yes
+  become: false
+  register: k8s_cluster_output
+
+- name: Store EKS config
+  community.aws.aws_secret:
+    aws_region: "{{ aws_region }}"
+    name: "eks_{{ eks_cluster_name }}_{{ item.name }}"
+    state: present
+    secret_type: "string"
+    secret: "{{ item.secret }}"
+  become: false
+  with_items:
+    - name: ca
+      secret: "{{ k8s_cluster_output.certificate_authority.data }}"
+    - name: endpoint
+      secret: "{{ k8s_cluster_output.endpoint }}"
+    - name: arn
+      secret: "{{ k8s_cluster_output.arn }}"
+
+- include_role:
+    name: generate-kubeconfig
+
+- name: Create EKS nodes (cloudformation)
+  cloudformation:
+    aws_region: "{{ aws_region }}"
+    stack_name: "{{ eks_stack_name }}-worker-nodes"
+    state: "present"
+    disable_rollback: no
+    # New CF templates: https://github.com/awslabs/amazon-eks-ami
+    # `aws s3 ls s3://amazon-eks/cloudformation/`
+    # template_url: https://s3.us-west-2.amazonaws.com/amazon-eks/cloudformation/2020-10-29/amazon-eks-nodegroup.yaml
+    # modified local file contains extra CloudwatchIAMRole parameter
+    template: "roles/setup-eks/files/amazon-eks-nodegroup.yaml"
+    template_parameters:
+      ClusterName: "{{ eks_cluster_name }}"
+      ClusterControlPlaneSecurityGroup: "{{ vpc_output.stack_outputs.SecurityGroups }}"
+      NodeGroupName: "{{ eks_stack_name }}-worker-nodes"
+      NodeAutoScalingGroupMinSize: "{{ eks_worker_nodes_min }}"
+      NodeAutoScalingGroupMaxSize: "{{ eks_worker_nodes_max }}"
+      NodeAutoScalingGroupDesiredCapacity: "{{ eks_worker_nodes_desired }}"
+      NodeInstanceType: "{{ eks_worker_instance_type }}"
+      NodeImageId: "{{ eks_worker_ami_id }}"
+      KeyName: "{{ eks_ec2_ssh_key }}"
+      VpcId: "{{ vpc_output.stack_outputs.VpcId }}"
+      Subnets: "{{ vpc_output.stack_outputs.SubnetIds }}"
+      CloudwatchIAMRole: "{{ cloudwatch_policy_output.policy.arn }}"
+  become: false
+  register: k8s_nodes_output
+
+- name: Get Admin SSO role
+  community.aws.iam_role_info:
+    path_prefix: "{{ aws_sso_role_path }}"
+  register: aws_sso_roles
+  become: false
+
+- name: Get SSO role ARN
+  set_fact:
+    sso_admin_role_arn: "{{ aws_sso_roles.iam_roles| regex_findall('arn:aws:iam::.*:role/aws-reserved/sso.amazonaws.com/.*/AWSReservedSSO_AdministratorAccess_[a-zA-Z0-9]{16}') }}"
+  become: false
+
+- name: Display SSO role arn for admin group
+  ansible.builtin.debug:
+    msg: "{{ sso_admin_role_arn[0] }}"
+  when: show_debug_output is defined
+  become: false
+
+- name: Debug config
+  shell: "echo '{{ lookup('template','aws-auth-cm.yaml') }}' > /tmp/aws.yml"
+  when: show_debug_output is defined
+  become: false
+
+- name: Join worker nodes to the EKS cluster
+  k8s:
+    state: present
+    definition: "{{ lookup('template', 'aws-auth-cm.yaml') | from_yaml }}"
+    kubeconfig: "{{ ansible_env.HOME}}/.kube/{{ eks_cluster_name }}_cluster_config"
+  become: false
+
+- name: Get EKS worker role ARN
+  set_fact:
+    eks_worker_role_arn: "{{ k8s_nodes_output.stack_outputs.NodeInstanceRole }}"
+  become: false
+
+- name: Debug EKS worker ARN 
+  ansible.builtin.debug:
+    var: "{{ item }}"
+  with_items:
+    - k8s_nodes_output.stack_outputs.NodeInstanceRole
+    - eks_worker_role_arn
+  when: show_debug_output is defined
+
+- name: Create Giftless S3 Bucket
+  amazon.aws.s3_bucket:
+    aws_region: "{{ aws_region }}"
+    name: "{{ giftless_s3_bucket }}"
+    policy: "{{ lookup('template','giftless_s3_policy.json') }}"
+    state: present
+    public_access:
+        block_public_acls: true
+        ignore_public_acls: true
+        block_public_policy: true
+        restrict_public_buckets: true
+    requester_pays: no
+    versioning: yes
+  when: use_giftless
+  become: false
+
+- name: Create amazon-cloudwatch namespace
+  kubernetes.core.k8s:
+    name: "amazon-cloudwatch"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+# Template based on https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Container-Insights-setup-logs-FluentBit.html
+# and https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit.yaml
+- name: Deploy Fluent-bit to Cloudwatch integration
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/{{ item }}') | from_yaml_all|list }}"
+    namespace: "amazon-cloudwatch"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - fluent-bit-configmap.yaml
+    - fluent-bit.yaml
+
+- name: Add Stakater HELM repository (auto-reloader)
+  kubernetes.core.helm_repository:
+    name: stakater
+    repo_url: https://stakater.github.io/stakater-charts
+  become: false
+
+# Deploy Reloader, service that takes care of automatic reloads when configmap or secret changes
+# https://github.com/stakater/Reloader
+- name: Deploy Reloader
+  kubernetes.core.helm:
+    namespace: default
+    update_repo_cache: yes
+    name: reloader
+    chart_repo_url: https://stakater.github.io/stakater-charts
+    chart_ref: reloader
+    kubeconfig: "{{ kubeconfig }}"
+    values:
+      ignoreSecrets: false
+      ignoreConfigMaps: false
+  become: false

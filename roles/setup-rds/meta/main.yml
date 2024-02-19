@@ -1,0 +1,18 @@
+galaxy_info:
+  author: Michal Ful
+  description: Creates an RDS MySQL instance for CKAN
+  company: Fjelltopp Ltd
+  license: GPL-2.0-or-later
+
+  min_ansible_version: 2.10
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - 20.04
+        - 18.04
+
+  galaxy_tags: []
+
+dependencies: []
+

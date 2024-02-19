@@ -1,0 +1,48 @@
+---
+- include_role:
+    name: k8s-context
+  when: fjelltopp_env_type == 'local'
+
+- name: Create PROFILE_EDITOR namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: obtain ACM certficate info
+  community.aws.aws_acm_info:
+    aws_region: "{{ aws_region }}"
+    domain_name: "{{ profile_editor_tls_name }}"
+  when: profile_editor_tls_name is defined
+  register: certificate_acm
+  become: false
+
+- name: Display ACM arn
+  ansible.builtin.debug:
+    var: certificate_acm.certificates[0].certificate_arn
+  when: show_debug_output is defined
+
+- name: Deploy Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: profile_editor_tls_name is defined
+  with_items:
+    - nginx-ingress-tls-elb_v1_0_0.yaml
+
+- name: Deploy Profile Editor
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - profile_editor.yaml
+    - profile_editor_ingress.yaml

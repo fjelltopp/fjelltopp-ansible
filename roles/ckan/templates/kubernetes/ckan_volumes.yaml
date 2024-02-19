@@ -1,0 +1,131 @@
+{% if fjelltopp_env_type == 'local' %}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: ckan-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: ckan-webassets
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: ckan-resources
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: localckan
+  labels:
+    app: ckan
+spec:
+  storageClassName: standard
+  claimRef:
+    name: localckan
+    namespace: {{ application_namespace }}
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  hostPath:
+    path: /minikube-host/
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: localckan
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: localckan
+status: {}
+
+{% else %}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ckan-storage
+spec:
+  storageClassName: "efs-client"
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1000Mi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ckan-webassets
+spec:
+  storageClassName: "efs-client"
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1000Mi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ckan
+  name: ckan-resources
+spec:
+  storageClassName: "efs-client"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}
+
+{% endif %}
+

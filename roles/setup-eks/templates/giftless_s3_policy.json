@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::{{ giftless_s3_bucket }}",
+        "arn:aws:s3:::{{ giftless_s3_bucket }}/*"
+      ],
+      "Condition": {
+        "StringNotLike": {
+          "aws:userId": [
+            "{{ sso_admin_role_arn[0] }}*",
+            "{{ eks_worker_role_arn }}"
+          ]
+        }
+      }
+    }
+  ]
+}

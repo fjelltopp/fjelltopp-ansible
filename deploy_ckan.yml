@@ -1,0 +1,5 @@
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: ckan, tags: ["deploy", "all"] }

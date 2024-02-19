@@ -1,0 +1,13 @@
+---
+# defaults file for ape
+profile_editor_pod_replicas_nr: 1
+profile_editor_image: "ghcr.io/fjelltopp/fjelltopp-base-images/python-fjelltopp-base"
+profile_editor_image_tag: "3.10"
+profile_editor_node_env_type: "production"
+application_namespace: "profile-editor"
+profile_editor_fqdn: "profile-editor.minikube"
+profile_editor_json_logging: "False"
+# sentry dsn can be public according to docs
+#profile_editor_sentry_dsn: "https://9af95fbf4e6d455798c7a59dd1796465@o68074.ingest.sentry.io/6091586"
+
+profile_editor_slack_webhook: "dummyvalue"

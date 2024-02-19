@@ -1,0 +1,89 @@
+---
+- name: Get information about a ODK RDS instance
+  community.aws.rds_instance_info:
+    region: "{{ aws_region }}"
+    db_instance_identifier: "{{ application_namespace }}-rds"
+  when: fjelltopp_env_type != 'local'
+  register: odk_rds_info
+
+- name: obtain ACM certficate info
+  community.aws.aws_acm_info:
+    aws_region: "{{ aws_region }}"
+    domain_name: "{{ odk_tls_name }}"
+  when: odk_tls_name is defined
+  register: certificate_acm
+  become: false
+
+- name: Display ACM arn
+  ansible.builtin.debug:
+    var: certificate_acm.certificates[0].certificate_arn
+  when: show_debug_output is defined
+
+- name: Deploy Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - nginx-ingress-tls-elb_v1_3_0.yaml
+  when: odk_tls_name is defined
+
+- name: Create ODK namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: Setup Database
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'local'
+  with_items:
+    - db.yaml
+
+- name: Init ODK database in RDS
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - db_init_job.yml
+  when: fjelltopp_env_type != 'local'
+
+- name: Deploy ODK
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - redis.yaml
+    - pyxform.yaml
+    - enketo.yaml
+    - odk.yaml
+    - frontend.yaml
+    - ingress.yaml
+
+- name: Setup backup job
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'prod'
+  with_items:
+    - backup_cronjob.yaml
+

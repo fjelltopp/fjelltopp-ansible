@@ -1,0 +1,38 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: navigator-db-backup
+data:
+  navigator_db_backup.sh: "{{ lookup('template', 'templates/navigator/db_backup.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-navigator-db
+spec:
+  schedule: "17 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: navigator-db-backup
+            image: {{ navigator_db_image }}
+            command: ['bash', '-c']
+            args:
+              - bash /tmp/navigator_db_backup.sh
+
+            volumeMounts:
+              - mountPath: /tmp/navigator_db_backup.sh
+                name: navigator-db-backup
+                readOnly: true
+                subPath: navigator_db_backup.sh
+
+          restartPolicy: Never
+          volumes:
+            - secret:
+                secretName: navigator-db-backup
+              name: navigator-db-backup

@@ -1,0 +1,180 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-enketo-main-config
+data:
+  redis.conf: "{{ lookup('template', 'templates/odk/redis-enketo-main.conf') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-enketo-main-startup-script
+data:
+  redis_enketo_main.sh: "{{ lookup('template', 'templates/odk/redis_enketo_main.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-enketo-cache-config
+data:
+  redis.conf: "{{ lookup('template', 'templates/odk/redis-enketo-cache.conf') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: odk
+    compoenent: redis-enketo-main
+  name: redis-enketo-main-data
+spec:
+{% if fjelltopp_env_type != 'local' %}
+  storageClassName: "efs-client"
+{% endif %}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1000Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: odk
+    component: redis-enketo-main
+  name: redis-enketo-main
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odk
+      component: redis-enketo-main
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: odk
+        component: redis-enketo-main
+    spec:
+      containers:
+        - image: redis:latest
+          command: ["/usr/local/bin/redis_enketo_main.sh"]
+          name: redis-enketo-main
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: redis-enketo-main-config
+              mountPath: /etc/redis/redis.conf
+              subPath: redis.conf
+            - name: redis-enketo-main-startup-script
+              mountPath: /usr/local/bin/redis_enketo_main.sh
+              subPath: redis_enketo_main.sh
+            - mountPath: /var/lib/redis
+              name: redis-enketo-main-data
+      restartPolicy: Always
+      volumes:
+        - name: redis-enketo-main-config
+          secret:
+            secretName: redis-enketo-main-config
+        - name: redis-enketo-main-startup-script
+          secret:
+            secretName: redis-enketo-main-startup-script
+            defaultMode: 0755
+        - name: redis-enketo-main-data
+          persistentVolumeClaim:
+            claimName: redis-enketo-main-data
+
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  name: redis-enketo-main
+spec:
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379
+  selector:
+    app: odk
+    component: redis-enketo-main
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: odk
+    component: redis-enketo-cache
+  name: redis-enketo-cache
+  annotations:
+    reloader.stakater.com/auto: "true"
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odk
+      component: redis-enketo-cache
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: odk
+        component: redis-enketo-cache
+    spec:
+      containers:
+        - image: redis:latest
+          command: ["redis-server"]
+          args: ["/etc/redis/redis.conf"]
+          name: redis-enketo-cache
+          ports:
+            - containerPort: 6379
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: redis-enketo-cache-config
+              mountPath: /etc/redis/redis.conf
+              subPath: redis.conf
+      restartPolicy: Always
+      volumes:
+        - name: redis-enketo-cache-config
+          secret:
+            secretName: redis-enketo-cache-config
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  name: redis-enketo-cache
+spec:
+  ports:
+    - name: "6379"
+      port: 6379
+      targetPort: 6379
+  selector:
+    app: odk
+    component: redis-enketo-cache
+status:
+  loadBalancer: {}
+

@@ -1,0 +1,108 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: odk-config
+data:
+  local.json: "{{ lookup('template', 'templates/odk/odk_config.json.j2')| to_nice_json(ensure_ascii=False,indent=2) | b64encode }}"
+  start-odk.sh: "{{ lookup('template', 'templates/odk/odk_start.sh')| b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: odk
+    compoenent: odk-central
+  name: data-transfer
+spec:
+{% if fjelltopp_env_type != 'local' %}
+  storageClassName: "efs-client"
+{% endif %}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1000Mi
+status: {}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: odk
+    component: odk-central
+  name: odk
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: odk
+      component: odk-central
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: odk
+        component: odk-central
+    spec:
+      containers:
+        - image: {{ odk_image }}
+          imagePullPolicy: Always
+          name: odk
+          command: ['/bin/bash', '-c']
+          args:
+            - /usr/odk/start-odk.sh
+          ports:
+            - containerPort: 8383
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: odk-config
+              mountPath: /usr/odk/config/local.json
+              subPath: local.json
+            - name: odk-config
+              mountPath: /usr/odk/start-odk.sh
+              subPath: start-odk.sh
+            - mountPath: /data/transfer
+              name: data-transfer
+
+      restartPolicy: Always
+      volumes:
+        - name: odk-config
+          secret:
+            secretName: odk-config
+            defaultMode: 0700
+        - name: data-transfer
+          persistentVolumeClaim:
+            claimName: data-transfer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: odk
+    component: odk-central
+  name: odk
+spec:
+  ports:
+    - name: "odk"
+      port: 8383
+      targetPort: 8383
+  selector:
+    app: odk
+    component: odk-central
+status:
+  loadBalancer: {}
+

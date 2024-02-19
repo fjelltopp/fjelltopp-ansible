@@ -1,0 +1,19 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ckan-cronjob
+spec:
+  schedule: "17 9 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ckan-cronjob
+            image: {{ fjelltopp_base_image }}
+            command: ['bash', '-c']
+            args:
+              - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_email_notifications;
+                curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications"
+          restartPolicy: Never

@@ -1,0 +1,38 @@
+{
+  "default": {
+    "database": {
+      "host": "{{ odk_db_hostname }}",
+      "user": "odk",
+      "password": "{{ odk_postgres_password }}",
+      "database": "odk"
+    },
+    "email": {
+      "serviceAccount": "{{ odk_support_email }}",
+      "transport": "smtp",
+      "transportOpts": {
+        "host": "{{ odk_smtp_server }}",
+        "port": {{ odk_smtp_server_port }},
+        "secure": {{ odk_smtp_old_tls }},
+        "auth": {
+          "user": "{{ odk_smtp_user }}",
+          "pass": "{{ odk_smtp_password }}"
+        }
+      }
+    },
+    "xlsform": {
+      "host": "pyxform",
+      "port": 80
+    },
+    "enketo": {
+      "url": "http://enketo:8005/-",
+      "apiKey": "{{ odk_enketo_api_key }}"
+    },
+    "env": {
+      "domain": "https://{{ odk_fqdn }}",
+      "sysadminAccount": "{{ odk_support_email }}"
+    },
+    "external": {
+    }
+  }
+}
+

@@ -1,0 +1,9 @@
+---
+# defaults file for setup-rds
+rds_storage_size: 20
+rds_instance_type: db.t3.small
+rds_postgres_version: "13.3"
+rds_admin_username: ckan_admin
+rds_multi_AZ: false
+rds_backup_retention: 3
+rds_admin_password: "{{ lookup('amazon.aws.aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region, on_missing='skip', on_deleted='skip' ) }}"

@@ -1,0 +1,31 @@
+---
+basic_http_auth: false
+# defaults file for ckan
+ckan_pod_replicas_nr: 1
+
+ckan_slack_webhook: "dummyvalue"
+ckan_backup_bucket_name: "dummyvalue"
+ckan_backup_access_key: "dummyvalue"
+ckan_backup_access_secret: "dummyvalue"
+ckan_backup_s3: "dummyvalue"
+ckan_backup_sql_directory_s3: "dummyvalue"
+ckan_backup_postgres_version: 13
+ckan_debug_enabled: "false"
+
+fjelltopp_base_image: "fjelltopp/ubuntu:base"
+
+ckan_sysadmin_api_key: dummyvalue
+
+ckan_recaptcha_publickey: ""
+ckan_recaptcha_privatekey: ""
+
+ckan_create_user_via_api: "false"
+ckan_create_user_via_web: "true"
+ckan_collaborators: "false"
+ckan_default_views: "image_view text_view recline_view"
+
+restore_production_backup: false
+
+ckan_extras: |-
+
+

@@ -1,0 +1,244 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ckan-configs
+data:
+  production.ini: "{{ lookup('template', 'templates/ckan/ckan_production.ini') | b64encode }}"
+  who.ini: "{{ lookup('template', 'templates/ckan/ckan_who.ini') | b64encode }}"
+  jwt-rs256.key: "{{ ckan_jwt_private_key |string | b64encode }}"
+  jwt-rs256.key.pub: "{{ ckan_jwt_public_key|string | b64encode  }}"
+  ckan-uwsgi.ini: "{{ lookup('template', 'templates/ckan/ckan-uwsgi.ini') | b64encode }}"
+  wsgi.py: "{{ lookup('template', 'templates/ckan/wsgi.py') | b64encode }}"
+type: Opaque
+
+{% if fjelltopp_env_type == 'local' %}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ckan-bootstrap
+data:
+  ckan_bootstrap.sh: "{{ lookup('template', 'templates/ckan/ckan_bootstrap.sh') | b64encode }}"
+type: Opaque
+{% endif %}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: ckan
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  selector:
+    matchLabels:
+      app: ckan
+  replicas: {{ ckan_pod_replicas_nr }}
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ckan
+    spec:
+      securityContext:
+        fsGroup: 900
+
+{% if fjelltopp_env_type == 'local' %}
+      initContainers:
+        - env:
+            - name: CKAN_DATAPUSHER_URL
+              value: "{{ ckan_datapusher_url }}"
+            - name: CKAN_DATASTORE_READ_URL
+              value: "{{ ckan_datastore_read_url }}"
+            - name: CKAN_DATASTORE_WRITE_URL
+              value: "{{ ckan_datastore_write_url }}"
+            - name: CKAN_MAX_UPLOAD_SIZE_MB
+              value: "{{ ckan_max_upload_size_mb }}"
+            - name: CKAN_REDIS_URL
+              value: "{{ ckan_redis_url }}"
+            - name: CKAN_SITE_URL
+              value: "{{ ckan_site_url }}"
+            - name: CKAN_SOLR_URL
+              value: "{{ ckan_solr_url }}"
+            - name: CKAN_SQLALCHEMY_URL
+              value: "{{ ckan_sqlalchemy_url }}"
+            - name: DS_RO_PASS
+              value: "{{ ckan_ds_ro_pass }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ ckan_postgres_password }}"
+            - name: PIPENV_DONT_LOAD_ENV
+              value: "1"
+            - name: WORKON_HOME
+              value: "/usr/lib/ckan/.minikubevenv"
+            - name: XDG_CACHE_HOME
+              value: "/usr/lib/ckan/.minikubevenv/cache"
+
+          image: {{ ckan_image }}:{{ ckan_image_tag }}
+          imagePullPolicy: IfNotPresent
+          name: init-ckan
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+          command: ['sh', '-c']
+          args:
+            - cd /usr/lib/ckan/;
+              export HOME=/usr/lib/ckan/;
+              pipenv sync --dev;
+              ./bootstrap.sh;
+              rm -rf venv;
+              ln -s .minikubevenv/ckan-ALitmJXH venv;
+              ls -la /usr/lib/ckan/venv/;
+              sh /tmp/ckan_bootstrap.sh
+
+          volumeMounts:
+            - mountPath: /usr/lib/ckan
+              name: localckan
+            - name: ckan-configs
+              mountPath: /etc/ckan
+              readOnly: true
+            - mountPath: /tmp/ckan_bootstrap.sh
+              name: ckan-bootstrap
+              readOnly: true
+              subPath: ckan_bootstrap.sh
+            - mountPath: /var/lib/ckan/storage
+              name: ckan-storage
+            - mountPath: /var/lib/ckan/webassets
+              name: ckan-webassets
+
+
+{% endif %}
+      containers:
+        - env:
+            - name: CKAN_DATAPUSHER_URL
+              value: {{ ckan_datapusher_url }}
+            - name: CKAN_DATASTORE_READ_URL
+              value: {{ ckan_datastore_read_url }}
+            - name: CKAN_DATASTORE_WRITE_URL
+              value: {{ ckan_datastore_write_url }}
+            - name: CKAN_MAX_UPLOAD_SIZE_MB
+              value: "{{ ckan_max_upload_size_mb }}"
+            - name: CKAN_REDIS_URL
+              value: "{{ ckan_redis_url }}"
+            - name: CKAN_SITE_URL
+              value: "{{ ckan_site_url }}"
+            - name: CKAN_SOLR_URL
+              value: "{{ ckan_solr_url }}"
+            - name: CKAN_SQLALCHEMY_URL
+              value: {{ ckan_sqlalchemy_url }}
+            - name: DS_RO_PASS
+              value: "{{ ckan_ds_ro_pass }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ ckan_postgres_password }}"
+            - name: PIPENV_DONT_LOAD_ENV
+              value: "1"
+            - name: AWS_DEFAULT_REGION
+              value: "{{ aws_region }}"
+{% if fjelltopp_env_type == 'local' %}
+            - name: HOME
+              value: "/usr/lib/ckan"
+{% endif %}
+          image: {{ ckan_image }}:{{ ckan_image_tag }}
+{% if fjelltopp_env_type == 'local' %}
+          imagePullPolicy: IfNotPresent
+{% else %}
+          imagePullPolicy: Always
+{% endif %}
+
+          name: ckan
+# assume local user uid
+{% if fjelltopp_env_type == 'local' %}
+          tty: true
+          stdin: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+{% endif %}
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 15
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/ckan/storage
+              name: ckan-storage
+            - mountPath: /var/lib/ckan/webassets
+              name: ckan-webassets
+            - mountPath: /var/lib/ckan/resources
+              name: ckan-resources
+            - name: ckan-configs
+              mountPath: /etc/ckan
+              readOnly: true
+
+{% if fjelltopp_env_type == 'local' %}
+            - mountPath: /usr/lib/ckan
+              name: localckan
+{% endif %}
+      restartPolicy: Always
+      volumes:
+        - name: ckan-storage
+          persistentVolumeClaim:
+            claimName: ckan-storage
+        - name: ckan-webassets
+          persistentVolumeClaim:
+            claimName: ckan-webassets
+        - name: ckan-resources
+          persistentVolumeClaim:
+            claimName: ckan-resources
+
+{% if fjelltopp_env_type == 'local' %}
+        - name: localckan
+          persistentVolumeClaim:
+            claimName: localckan
+        - secret:
+            secretName: ckan-bootstrap
+          name: ckan-bootstrap
+{% endif %}
+        - name: ckan-configs
+          secret:
+            secretName: ckan-configs
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: ckan
+  name: ckan
+spec:
+  ports:
+    - name: "ckan"
+      port: 5000
+      targetPort: 5000
+  selector:
+    app: ckan
+status:
+  loadBalancer: {}
+

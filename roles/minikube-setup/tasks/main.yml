@@ -1,0 +1,28 @@
+---
+- name: Start minikube
+  shell: minikube start --profile "{{ application_namespace }}" --kubernetes-version="{{ minikube_kubernetes_version }}" --mount --mount-string="{{ minikube_host_mountpath }}:/minikube-host" --listen-address="0.0.0.0"
+  become: false
+
+- name: Enable ingress
+  shell: minikube --profile "{{ application_namespace }}" addons enable ingress
+  become: false
+
+- name: Register Minikube's IP address
+  shell: minikube ip --profile "{{ application_namespace }}"
+  register: minikube_ip
+  become: false
+
+- name: Set Minikube IP variable
+  set_fact:
+    cluster_ip: "{{ minikube_ip.stdout }}"
+
+- name: Update /etc/hosts
+  become: yes
+  become_user: root
+  lineinfile:
+    path: "/etc/hosts"
+    regexp: "{{ app_fqdn }}"
+    line: "{{ cluster_ip }} {{ app_fqdn }}"
+    state: present
+    backup: yes
+  become: true

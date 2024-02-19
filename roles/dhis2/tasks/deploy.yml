@@ -1,0 +1,98 @@
+---
+- name: Get information about a DHIS2 RDS instance
+  community.aws.rds_instance_info:
+    region: "{{ aws_region }}"
+    db_instance_identifier: "{{ application_namespace }}-rds"
+  when: fjelltopp_env_type != 'local'
+  register: dhis2_rds_info
+
+- name: obtain ACM certficate info
+  community.aws.aws_acm_info:
+    aws_region: "{{ aws_region }}"
+    domain_name: "{{ dhis2_tls_name }}"
+  when: dhis2_tls_name is defined
+  register: certificate_acm
+  become: false
+
+- name: Display ACM arn
+  ansible.builtin.debug:
+    var: certificate_acm.certificates[0].certificate_arn
+  when: show_debug_output is defined
+
+- name: Deploy Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - nginx-ingress-tls-elb_v1_3_0.yaml
+  when: dhis2_tls_name is defined
+
+- name: Create DHIS2 namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
+- name: Init DHIS2 schema in RDS
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - db_init_job.yml
+  when: fjelltopp_env_type != 'local'
+
+
+- name: Setup Database
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'local'
+  with_items:
+    - db.yaml
+
+- name: Deploy DHIS2
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - dhis2.yaml
+    - ingress.yaml
+
+- name: Setup backup job
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  when: fjelltopp_env_type == 'prod'
+  with_items:
+    - db_backup_cronjob.yaml
+
+- name: Import DHIS2 metadata
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - metadata_import_job.yml
+  when: import_metadata
+
+

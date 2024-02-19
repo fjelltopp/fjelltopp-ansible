@@ -1,0 +1,203 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: profile-editor-uwsgi-ini
+data:
+  app.ini: "{{ lookup('template', 'templates/profile_editor/profile_editor_uwsgi.ini') | b64encode }}"
+type: Opaque
+
+---
+# mount local minikube disk
+{% if fjelltopp_env_type == 'local' %}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: profile-editor
+  labels:
+    app: profile-editor
+spec:
+  storageClassName: standard
+  claimRef:
+    name: profile-editor-localpath
+    namespace: {{ application_namespace }}
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  hostPath:
+    path: /minikube-host
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: profile-editor
+  name: profile-editor-localpath
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: profile-editor-localpath
+status: {}
+
+---
+{% endif %}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: profile-editor
+  name: profile-editor
+spec:
+  selector:
+    matchLabels:
+      app:  profile-editor
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: profile-editor
+    spec:
+# Init container is needed only on local dev
+{% if fjelltopp_env_type == 'local' %}
+      initContainers:
+        - env:
+            - name: WORKON_HOME
+              value: "/var/www/profile_editor/.minikubevenv"
+            - name: XDG_CACHE_HOME
+              value: "/var/www/profile_editor/.minikubevenv/cache"
+          image: {{ profile_editor_image }}:{{ profile_editor_image_tag }}
+          imagePullPolicy: IfNotPresent
+          name: init-ape
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+          command: ['sh', '-c']
+          args:
+            - cd /var/www/profile_editor; pipenv sync --dev
+          volumeMounts:
+            - mountPath: /var/www/profile_editor
+              name: profile-editor-localpath
+{% endif %}
+      containers:
+        - env:
+            - name: ENV_TYPE
+              value: "{{ fjelltopp_env_type }}"
+            - name: ENABLE_JSON_LOGGING
+              value: "{{ profile_editor_json_logging }}"
+            - name: AUTH0_DOMAIN
+              value: "{{ profile_editor_auth0_domain }}"
+            - name: AUTH0_MANAGEMENT_DOMAIN
+              value: "{{ profile_editor_auth0_management_domain }}"
+            - name: AUTH0_CLIENT_ID
+              value: "{{ profile_editor_auth0_client_id }}"
+            - name: AUTH0_CLIENT_SECRET
+              value: "{{ profile_editor_auth0_client_secret }}"
+            - name: APP_SECRET_KEY
+              value: "{{ app_secret_key }}"
+{% if fjelltopp_env_type == 'local' %}
+            - name: WORKON_HOME
+              value: "/var/www/profile_editor/.minikubevenv"
+            - name: XDG_CACHE_HOME
+              value: "/var/www/profile_editor/.minikubevenv/cache"
+            - name: FLASK_DEBUG
+              value: "1"
+{% else %}
+            - name: SENTRY_DSN
+              value: {{ profile_editor_sentry_dsn }}
+            - name: CONFIG_OBJECT
+              value: "config.Production"
+{% endif %}
+          image: {{ profile_editor_image }}:{{ profile_editor_image_tag }}
+{% if fjelltopp_env_type == 'local' %}
+          imagePullPolicy: IfNotPresent
+{% else %}
+          imagePullPolicy: Always
+{% endif %}
+          name: profile-editor
+# assume local user uid
+{% if fjelltopp_env_type == 'local' %}
+          tty: true
+          stdin: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+{% endif %}
+
+          command: ['sh', '-c', 'pip3 install uwsgi; cd /var/www/profile_editor && /usr/local/bin/uwsgi /var/www/uwsgi/app.ini']
+# disable healthchecks on local env
+{% if fjelltopp_env_type != 'local' %}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5001
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+{% endif %}
+          ports:
+            - containerPort: 5001
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/www/uwsgi/app.ini
+              name: profile-editor-uwsgi-ini
+              readOnly: true
+              subPath: app.ini
+{% if fjelltopp_env_type == 'local' %}
+            - mountPath: /var/www/profile_editor
+              name: profile-editor-localpath
+{% endif %}
+      volumes:
+        - secret:
+            secretName: profile-editor-uwsgi-ini
+          name: profile-editor-uwsgi-ini
+{% if fjelltopp_env_type == 'local' %}
+        - name: profile-editor-localpath
+          persistentVolumeClaim:
+            claimName: profile-editor-localpath
+{% endif %}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: profile-editor
+  name: profile-editor
+spec:
+  ports:
+    - name: "profile-editor"
+      port: 5001
+      targetPort: 5001
+  selector:
+    app: profile-editor
+status:
+  loadBalancer: {}

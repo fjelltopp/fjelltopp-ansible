@@ -1,0 +1,201 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nav-engine-uwsgi-ini
+data:
+  app.ini: "{{ lookup('template', 'templates/navigator/nav_engine_uwsgi.ini') | b64encode }}"
+type: Opaque
+
+---
+# mount local minikube disk
+{% if fjelltopp_env_type == 'local' %}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nav-eng-localpath
+  labels:
+    app: navigator-engine
+spec:
+  storageClassName: standard
+  claimRef:
+    name: nav-eng-localpath
+    namespace: {{ application_namespace }}
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  hostPath:
+    path: /minikube-host/navigator_engine
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-engine
+  name: nav-eng-localpath
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: nav-eng-localpath
+status: {}
+
+---
+{% endif %}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-engine
+  name: navigator-engine
+spec:
+  selector:
+    matchLabels:
+      app: navigator-engine
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 2
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: navigator-engine
+    spec:
+# init container is needed only on local dev
+{% if fjelltopp_env_type == 'local' %}
+      initContainers:
+        - env:
+            - name: CKAN_URL
+              value: "{{ ckan_site_url }}"
+            - name: WORKON_HOME
+              value: "/var/www/navigator_engine/.minikubevenv"
+            - name: XDG_CACHE_HOME
+              value: "/var/www/navigator_engine/.minikubevenv/cache"
+          image: {{ navigator_engine_image }}:{{ navigator_engine_image_tag }}
+          imagePullPolicy: IfNotPresent
+          name: init-navigator-engine
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+          command: ['sh', '-c']
+          args:
+            - cd /var/www/navigator_engine/; pipenv sync --dev
+
+          volumeMounts:
+            - mountPath: /var/www/navigator_engine
+              name: nav-eng-localpath
+{% endif %}
+      containers:
+        - env:
+            - name: CKAN_URL
+              value: "{{ ckan_site_url }}"
+            - name: REDIS_URL
+              value: "redis-navigator"
+            - name: FLASK_APP
+              value: "navigator_engine/app.py"
+            - name: ENV_TYPE
+              value: "{{ fjelltopp_env_type }}"
+            - name: ENABLE_JSON_LOGGING
+              value: "{{ navigator_json_logging }}"
+{% if fjelltopp_env_type != 'local' %}
+            - name: NAVIGATOR_ENGINE_SETTINGS
+              value: "navigator_engine.config.Production"
+            - name: SENTRY_DSN
+              value: {{ navigator_engine_sentry_dsn }}
+            - name: SQLALCHEMY_DATABASE_URI
+              value: "{{ navigator_engine_sqlalchemy_database_uri }}"
+{% else %}
+            - name: WORKON_HOME
+              value: "/var/www/navigator_engine/.minikubevenv"
+            - name: XDG_CACHE_HOME
+              value: "/var/www/navigator_engine/.minikubevenv/cache"
+{% endif %}
+          image: {{ navigator_engine_image }}:{{ navigator_engine_image_tag }}
+{% if fjelltopp_env_type == 'local' %}
+          imagePullPolicy: IfNotPresent
+          tty: true
+          stdin: true
+{% else %}
+          imagePullPolicy: Always
+{% endif %}
+          name: navigator-engine
+# use local user uid
+{% if fjelltopp_env_type == 'local' %}
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsUser: {{ ansible_user_uid }}
+            fsGroup: {{ ansible_user_gid }}
+{% endif %}
+          command: ['sh', '-c', 'cd /var/www/navigator_engine && ./setup.sh && /usr/local/bin/uwsgi /var/www/uwsgi/app.ini']
+# don't use healthchecks on local dev
+{% if fjelltopp_env_type != 'local' %}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5001
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
+{% endif %}
+          ports:
+            - containerPort: 5001
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/www/uwsgi/app.ini
+              name: nav-engine-uwsgi-ini
+              readOnly: true
+              subPath: app.ini
+{% if fjelltopp_env_type == 'local' %}
+            - mountPath: /var/www/navigator_engine
+              name: nav-eng-localpath
+{% endif %}
+      volumes:
+        - secret:
+            secretName: nav-engine-uwsgi-ini
+          name: nav-engine-uwsgi-ini
+{% if fjelltopp_env_type == 'local' %}
+        - name: nav-eng-localpath
+          persistentVolumeClaim:
+            claimName: nav-eng-localpath
+{% endif %}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: navigator-engine
+  name: navigator-engine
+spec:
+  ports:
+    - name: "navigator-eng"
+      port: 5001
+      targetPort: 5001
+  selector:
+    app: navigator-engine
+status:
+  loadBalancer: {}

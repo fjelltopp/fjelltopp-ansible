@@ -1,0 +1,42 @@
+- name: Authorize ECR
+  shell: AWS_PROFILE={{ lookup('env','AWS_PROFILE') }} aws ecr get-login-password --region {{ aws_region }} | docker login --password-stdin --username AWS https://{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com
+  become: false
+
+- name: Create ECR repository
+  community.aws.ecs_ecr:
+    name: "{{ ecr_ckan_repository }}"
+    state: present
+    region: "{{ aws_region }}"
+  register: ecr_output
+  become: false
+
+- name: Set default ECR lifecycle policy
+  community.aws.ecs_ecr:
+    name: "{{ ecr_ckan_repository }}"
+    scan_on_push: false
+    region: "{{ aws_region }}"
+    lifecycle_policy:
+      rules:
+        - rulePriority: 1
+          description: Delete untagged images after 30 days
+          selection:
+            tagStatus: untagged
+            countType: sinceImagePushed
+            countUnit: days
+            countNumber: 30
+          action:
+            type: expire
+  become: false
+
+- name: Build and push
+  community.docker.docker_image:
+    state: present
+    build:
+      path: "{{ ecr_ckan_buildlocation }}"
+      # Disable cache as it seems that build can ignore changes to Dockerfile
+      nocache: yes
+    repository: "{{ ecr_output.repository.repositoryUri }}"
+    name: "ckan:{{ ckan_build_tag | default('latest') }}"
+    source: build
+    push: yes
+  become: false

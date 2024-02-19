@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: odk-backup
+data:
+  odk_db_backup.sh: "{{ lookup('template', 'templates/odk/db_backup.sh') | b64encode }}"
+  odk_redis_backup.sh: "{{ lookup('template', 'templates/odk/redis_backup.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-odk
+spec:
+  schedule: "17 1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: odk-db-backup
+            image: postgres:13
+            command: ['bash', '-c']
+            args:
+              - bash /tmp/odk_db_backup.sh
+
+            volumeMounts:
+              - mountPath: /tmp/odk_db_backup.sh
+                name: odk-backup
+                readOnly: true
+                subPath: odk_db_backup.sh
+
+          - name: odk-redis-backup
+            image: redis:latest
+            command: ['sh', '-c']
+            args:
+              - bash /tmp/odk_redis_backup.sh
+
+            volumeMounts:
+              - mountPath: /tmp/odk_redis_backup.sh
+                name: odk-backup
+                readOnly: true
+                subPath: odk_redis_backup.sh
+
+          restartPolicy: Never
+          volumes:
+            - secret:
+                secretName: odk-backup
+              name: odk-backup
+      backoffLimit: 1

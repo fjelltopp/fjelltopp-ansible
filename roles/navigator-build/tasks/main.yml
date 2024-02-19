@@ -1,0 +1,96 @@
+- name: Authorize ECR
+  shell: AWS_PROFILE={{ lookup('env','AWS_PROFILE') }} aws ecr get-login-password --region {{ aws_region }} | docker login --password-stdin --username AWS https://{{ aws_account_id }}.dkr.ecr.{{ aws_region }}.amazonaws.com
+  tags:
+    - ui
+    - api
+    - engine
+  become: false
+
+- name: Create ECR repository
+  community.aws.ecs_ecr:
+    name: "{{ ecr_navigator_repository }}"
+    state: present
+    region: "{{ aws_region }}"
+  tags:
+    - ui
+    - api
+    - engine
+  register: ecr_output
+  become: false
+
+- name: Set default ECR lifecycle policy
+  community.aws.ecs_ecr:
+    name: "{{ ecr_navigator_repository }}"
+    scan_on_push: false
+    region: "{{ aws_region }}"
+    lifecycle_policy:
+      rules:
+        - rulePriority: 1
+          description: Delete untagged images after 30 days
+          selection:
+            tagStatus: untagged
+            countType: sinceImagePushed
+            countUnit: days
+            countNumber: 30
+          action:
+            type: expire
+  tags:
+    - ui
+    - api
+    - engine
+  become: false
+
+- name: Build navigator-api and push
+  community.docker.docker_image:
+    state: present
+    build:
+      path: "{{ ecr_navigator_api_buildlocation }}"
+      # Disable cache as it seems that build can ignore changes to Dockerfile
+      nocache: yes
+    repository: "{{ ecr_output.repository.repositoryUri }}"
+    name: "{{ ecr_navigator_repository }}"
+    tag: "{{ navigator_api_build_tag | default('api-latest') }}"
+    source: build
+    push: yes
+  tags:
+    - api
+  become: false
+
+- name: Build navigator-engine and push
+  community.docker.docker_image:
+    state: present
+    build:
+      path: "{{ ecr_navigator_engine_buildlocation }}"
+      # Disable cache as it seems that build can ignore changes to Dockerfile
+      nocache: yes
+    repository: "{{ ecr_output.repository.repositoryUri }}"
+    name: "{{ ecr_navigator_repository }}"
+    tag: "{{ navigator_engine_build_tag | default('engine-latest') }}"
+    source: build
+    push: yes
+  tags: 
+    - engine
+  become: false
+
+- name: Build navigator-ui and push
+  community.docker.docker_image:
+    state: present
+    build:
+      path: "{{ ecr_navigator_ui_buildlocation }}"
+      args:
+        NEXT_PUBLIC_CKAN_SITE_URL: "{{ ckan_site_url }}"
+        NEXT_PUBLIC_API_BASE_URL: "{{ navigator_api_base_url }}"
+        SENTRY_AUTH_TOKEN: "{{ lookup('aws_secret', 'jenkins_navigator_ui_sentry_token' , region = aws_region ) }}"
+        NODE_ENV: "{{ navigator_node_env_type }}"
+        NEXT_TELEMETRY_DISABLED: "1"
+      # Disable cache as it seems that build can ignore changes to Dockerfile
+      nocache: yes
+    repository: "{{ ecr_output.repository.repositoryUri }}"
+    name: "{{ ecr_navigator_repository }}"
+    tag: "{{ navigator_ui_build_tag | default('ui-latest') }}"
+    source: build
+    push: yes
+  tags: 
+    - ui
+  become: false
+

@@ -1,0 +1,7 @@
+- name: Generate kubeconfig
+  ansible.builtin.template:
+    src: kubeconfig.yaml
+    dest: "{{ ansible_env.HOME}}/.kube/{{ eks_cluster_name }}_cluster_config"
+    mode: '0600'
+  become: false
+

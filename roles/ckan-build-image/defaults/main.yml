@@ -1,0 +1,4 @@
+---
+# defaults file for ckan-build-image
+ecr_ckan_repository: "ckan-fjelltopp"
+

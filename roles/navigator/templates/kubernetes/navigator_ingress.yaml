@@ -1,0 +1,37 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: navigator-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+    nginx.org/websocket-services: "gateway-cluster-ip-service"
+spec:
+  rules:
+    - host: "{{ navigator_fqdn }}"
+      http:
+        paths:
+          - path: /middleware/api/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: navigator-api
+                port:
+                  name: navigator-api
+          - path: /engine/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: navigator-engine
+                port:
+                  name: navigator-eng
+          - path: /(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: navigator-ui
+                port:
+                  name: navigator-ui

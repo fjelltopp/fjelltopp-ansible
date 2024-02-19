@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: odk
+    component: pyxform
+  name: pyxform
+  annotations:
+    reloader.stakater.com/auto: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: odk
+      component: pyxform
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: odk
+        component: pyxform
+    spec:
+      containers:
+        - image: {{ pyxform_image }}
+          name: pyxform
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+      restartPolicy: Always
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  name: pyxform
+spec:
+  ports:
+    - name: "pyxform"
+      port: 80
+      targetPort: 80
+  selector:
+    app: odk
+    component: pyxform
+status:
+  loadBalancer: {}

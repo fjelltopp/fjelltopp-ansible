@@ -1,0 +1,4 @@
+---
+- name: Switch local (Minikube) context to the current environment (setup_local_dev first !)
+  shell: minikube profile "{{ application_namespace }}"
+  become: false
