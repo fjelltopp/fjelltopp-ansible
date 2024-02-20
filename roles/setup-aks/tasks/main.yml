@@ -1,0 +1,53 @@
+---
+- name: Create a resource group
+  azure_rm_resourcegroup:
+    name: "{{ resource_group_name }}"
+    location: "{{ azure_region }}"
+    tags:
+      testing: testing
+      delete: on-exit
+
+- name: Create dedicated Virtual Network
+  azure_rm_virtualnetwork:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-v-net"
+    address_prefixes_cidr:
+      - "{{vpc_cidr_block}}"
+    tags:
+      testing: testing
+      delete: on-exit
+
+- name: Create a subnet for AKS
+  azure_rm_subnet:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network_name: "{{resource_prefix}}-v-net"
+    name: sb_internal_01_aks
+    address_prefix_cidr: "{{vpc_cidr_subnet1}}"
+  register: subnet_output
+
+- name: Display VPC subnets
+  ansible.builtin.debug:
+    var: subnet_output
+
+- name: AKS Cluster
+  azure_rm_aks:
+    name: "{{resource_prefix}}-aks"
+    resource_group: "{{ resource_group_name }}"
+    node_resource_group: 
+    dns_prefix: "{{ application_name|lower }}"
+    kubernetes_version: "{{ k8s_version }}"
+    api_server_access_profile:
+      enable_private_cluster: true
+    agent_pool_profiles:
+      - name: system
+        count: 1
+        vm_size: standard_a2_v2
+        vnet_subnet_id: "{{subnet_output.state.id}}"
+        mode: System
+      - name: default
+        count: "{{ worker_nodes_desired }}"
+        enable_auto_scaling: true
+        min_count: "{{ worker_nodes_min }}"
+        max_count: "{{ worker_nodes_max }}"
+        vm_size: "{{worker_instance_type}}"
+        vnet_subnet_id: "{{subnet_output.state.id}}"
