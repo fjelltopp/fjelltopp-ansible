@@ -1,4 +1,9 @@
 ---
+- name: Get tenant_id for later
+  azure.azcollection.azure_rm_subscription_info:
+    all: true
+  register: subscription_output
+
 - name: Create a resource group
   azure_rm_resourcegroup:
     name: "{{ resource_group_name }}"
@@ -13,10 +18,8 @@
     name: "{{resource_prefix}}-v-net"
     address_prefixes_cidr:
       - "{{vpc_cidr_block}}"
-    tags:
-      testing: testing
-      delete: on-exit
-
+  register: vnet_output
+    
 - name: Create a subnet for AKS
   azure_rm_subnet:
     resource_group: "{{ resource_group_name }}"
@@ -25,15 +28,11 @@
     address_prefix_cidr: "{{vpc_cidr_subnet1}}"
   register: subnet_output
 
-- name: Display VPC subnets
-  ansible.builtin.debug:
-    var: subnet_output
-
 - name: AKS Cluster
   azure_rm_aks:
     name: "{{resource_prefix}}-aks"
     resource_group: "{{ resource_group_name }}"
-    node_resource_group: 
+    node_resource_group: "{{ node_group_name }}"
     dns_prefix: "{{ application_name|lower }}"
     kubernetes_version: "{{ k8s_version }}"
     api_server_access_profile:
@@ -51,3 +50,70 @@
         max_count: "{{ worker_nodes_max }}"
         vm_size: "{{worker_instance_type}}"
         vnet_subnet_id: "{{subnet_output.state.id}}"
+  register: aks_output
+
+- name: Create a storage account for the data lake
+  azure_rm_storageaccount:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ storage_account_name }}"
+    kind: StorageV2
+    type: Standard_ZRS
+    is_hns_enabled: true
+    public_network_access: Disabled
+
+- name: Create managed disk for k8s nodes
+  azure_rm_manageddisk:
+    name: "{{resource_prefix}}-manageddisk-aks"
+    resource_group: "{{aks_output.node_resource_group}}"
+    disk_size_gb: 4
+
+- name: Create an azure container registry
+  azure_rm_containerregistry:
+    name: "{{acr_name}}"
+    resource_group: "{{ resource_group_name }}"
+    admin_user_enabled: true
+    sku: Premium
+    # public-network-enabled: false # this isn't supported so will need doing with the CLI
+
+- name: Create key vault
+  azure_rm_keyvault:
+    resource_group: "{{ resource_group_name }}"
+    vault_name: "{{resource_prefix}}-keyvault"
+    vault_tenant: "{{ subscription_output.subscriptions[0].tenant_id }}"
+    sku:
+      family: A
+      name: standard
+    access_policies:
+      - tenant_id: "{{ subscription_output.subscriptions[0].tenant_id }}"
+        object_id: "{{ key_vault_object_id }}"
+        keys:
+          - get
+          - list
+
+- name: Create private endpoint for ACR
+  azure.azcollection.azure_rm_privateendpoint:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-pe-acr"
+    state: present
+    private_link_service_connections:
+      - name: "{{resource_prefix}}-pe-acr"
+        private_link_service_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.ContainerRegistry/registries/{{acr_name}}"
+        group_ids: 
+          - "registry"
+    subnet:
+      id: "{{subnet_output.state.id}}"
+  
+
+- name: Create private endpoint for vault
+  azure.azcollection.azure_rm_privateendpoint:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-pe-keyvault"
+    state: present
+    private_link_service_connections:
+      - name: "{{resource_prefix}}-pe-acr"
+        private_link_service_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.KeyVault/vaults/{{resource_prefix}}-keyvault"
+        group_ids: 
+          - "vault"
+    subnet:
+      id: "{{subnet_output.state.id}}"
+  
