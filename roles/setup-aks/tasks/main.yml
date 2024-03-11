@@ -8,9 +8,6 @@
   azure_rm_resourcegroup:
     name: "{{ resource_group_name }}"
     location: "{{ azure_region }}"
-    tags:
-      testing: testing
-      delete: on-exit
 
 - name: Create dedicated Virtual Network
   azure_rm_virtualnetwork:
@@ -26,6 +23,7 @@
     virtual_network_name: "{{resource_prefix}}-v-net"
     name: sb_internal_01_aks
     address_prefix_cidr: "{{vpc_cidr_subnet1}}"
+    private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
   register: subnet_output
 
 - name: AKS Cluster
@@ -52,6 +50,25 @@
         vnet_subnet_id: "{{subnet_output.state.id}}"
   register: aks_output
 
+# TODO: Remove public control plane network with CLI
+
+- name: Get Service Principal for AKS
+  command: >
+      az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
+  register: sp_output_raw
+
+- set_fact:
+    aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
+
+- name: Show SP
+  debug: "msg={{ aks_sp }}"
+
+- name: Allow AKS SP to create network elements
+  azure_rm_roleassignment:
+    assignee_object_id: "{{ aks_sp }}"
+    role_definition_id: "/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7" # Network Contributor (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/networking#network-contributor)
+    scope: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.Network/virtualNetworks/{{resource_prefix}}-v-net"
+
 - name: Create a storage account for the data lake
   azure_rm_storageaccount:
     resource_group: "{{ resource_group_name }}"
@@ -73,7 +90,7 @@
     resource_group: "{{ resource_group_name }}"
     admin_user_enabled: true
     sku: Premium
-    # public-network-enabled: false # this isn't supported so will need doing with the CLI
+    # public-network-enabled: false # TODO: this isn't supported so will need doing with the CLI
 
 - name: Create key vault
   azure_rm_keyvault:
@@ -85,7 +102,7 @@
       name: standard
     access_policies:
       - tenant_id: "{{ subscription_output.subscriptions[0].tenant_id }}"
-        object_id: "{{ key_vault_object_id }}"
+        object_id: "{{ aks_sp }}"
         keys:
           - get
           - list
@@ -103,7 +120,6 @@
     subnet:
       id: "{{subnet_output.state.id}}"
   
-
 - name: Create private endpoint for vault
   azure.azcollection.azure_rm_privateendpoint:
     resource_group: "{{ resource_group_name }}"
@@ -111,9 +127,38 @@
     state: present
     private_link_service_connections:
       - name: "{{resource_prefix}}-pe-acr"
-        private_link_service_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.KeyVault/vaults/{{resource_prefix}}-keyvault"
+        private_link_service_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.KeyVault/vaults/{{vault_name}}"
         group_ids: 
           - "vault"
     subnet:
       id: "{{subnet_output.state.id}}"
   
+# No ansible for this, so using CLI
+- name: Create Front Door Profile
+  command: >
+    az afd profile create \
+    --profile-name {{resource_prefix}}-afd \
+    --resource-group {{ resource_group_name }} \
+    --sku Premium_AzureFrontDoor
+
+- name: Create Front Door Endpoint
+  command: >
+    az afd endpoint create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{resource_prefix}}-afd \
+      --endpoint-name {{resource_prefix}}-in \
+      --enabled-state Enabled
+
+- name: Create Front Door Origin Group
+  command: >      
+    az afd origin-group create \
+    --resource-group {{ resource_group_name }} \
+    --profile-name {{resource_prefix}}-afd \
+    --origin-group-name {{resource_prefix}}-aks-og \
+    --probe-request-type GET \
+    --probe-protocol Http \
+    --probe-interval-in-seconds 60 \
+    --probe-path / \
+    --sample-size 4 \
+    --successful-samples-required 3 \
+    --additional-latency-in-milliseconds 50
