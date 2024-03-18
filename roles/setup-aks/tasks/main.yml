@@ -24,6 +24,7 @@
     name: sb_internal_01_aks
     address_prefix_cidr: "{{vpc_cidr_subnet1}}"
     private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
+    private_link_service_network_policies: "Disabled"
   register: subnet_output
 
 - name: AKS Cluster
