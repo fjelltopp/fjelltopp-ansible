@@ -1,1 +1,4 @@
 ---
+# Make an if
+# storageClassName: "efs-client" # AWS
+storage_class_name: managed-csi # Azure

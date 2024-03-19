@@ -7,7 +7,7 @@ metadata:
   name: solr
 spec:
 {% if fjelltopp_env_type != 'local' %}
-  storageClassName: "efs-client"
+  storageClassName: "{{ storage_class_name }}"
 {% endif %}
   accessModes:
     - ReadWriteOnce

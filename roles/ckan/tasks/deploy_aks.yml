@@ -1,0 +1,111 @@
+---
+- name: Create CKAN namespace
+  command: >
+    az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
+    --command "kubectl create namespace {{ application_namespace }}"
+
+## TODO move to secrets!
+- name: Generate Beaker session secret
+  set_fact:
+    ckan_beaker_secret: "{{ lookup('community.general.random_string', length=25, special=false) }}"
+  when: not ckan_beaker_secret|default(None) 
+
+- name: Generate API token secret
+  set_fact:
+    ckan_api_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
+  when: not ckan_api_secret|default(None)  
+
+# - name: Get information about an RDS CKAN instance
+#   community.aws.rds_instance_info:
+#     region: "{{ aws_region }}"
+#     db_instance_identifier: "{{ application_namespace }}-rds"
+#   when: fjelltopp_env_type != 'local'
+#   register: ckan_rds_info
+
+# - name: Deploy Ingress
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+#     namespace: "{{ application_namespace }}"
+#     kubeconfig: "{{ kubeconfig }}"
+#   become: false
+#   with_items:
+#     - nginx-ingress-tls-elb_v1_0_0.yaml
+#   when: ckan_tls_name is defined
+
+
+# - name: Setup Database
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+#     namespace: "{{ application_namespace }}"
+#     kubeconfig: "{{ kubeconfig }}"
+#   become: false
+#   with_items:
+#     - db.yaml
+
+# # Based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore
+# - name: Init CKAN schema in RDS
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+#     namespace: "{{ application_namespace }}"
+#     kubeconfig: "{{ kubeconfig }}"
+#   become: false
+#   with_items:
+#     - ckandb_job.yaml
+
+- name: Set K8S Yaml files
+  set_fact:
+    k8s_yaml:
+      - solr.yaml
+      - datapusher.yaml
+      - redis.yaml
+      # - giftless.yaml
+      # - giftless_ingress.yaml
+      - ckan_volumes.yaml
+      - ckan.yaml
+      # - ckan_ingress.yaml
+      # - ckan_cronjob.yaml
+
+- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  
+  template:
+    src: "{{ lookup('first_found', 'templates/kubernetes/aks/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
+    dest: "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"  
+
+- name: Deploy CKAN
+  command: >
+    az aks command invoke \
+    --resource-group {{ resource_group_name }} 
+    --name {{resource_prefix}}-aks \
+    --command "kubectl apply -n {{ application_namespace }} -f {{item}}" \
+    --file "{{ lookup('first_found', 'templates/kubernetes/aks/out/{{ item }}') }}"
+  with_items: "{{ k8s_yaml }}"
+
+- name: Clean up templated files
+  command: >
+    rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"
+
+# - name: Setup backup job
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+#     namespace: "{{ application_namespace }}"
+#     kubeconfig: "{{ kubeconfig }}"
+#   become: false
+#   when: fjelltopp_env_type == 'prod'
+#   with_items:
+#     - db_backup_cronjob.yaml
+
+# - name: Setup db restore job
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+#     namespace: "{{ application_namespace }}"
+#     kubeconfig: "{{ kubeconfig }}"
+#   become: false
+#   when: fjelltopp_env_type != 'prod' and restore_production_backup
+#   with_items:
+#     - db_restore_cronjob.yaml
