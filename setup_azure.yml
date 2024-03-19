@@ -15,3 +15,4 @@
   become: false
   roles:
     - { role: setup-aks, tags: ["setup", "all", "aks"] }
+    - { role: setup-azure-frontdoor, tags: ["frontdoor"] }

@@ -65,7 +65,7 @@
       # - giftless_ingress.yaml
       - ckan_volumes.yaml
       - ckan.yaml
-      # - ckan_ingress.yaml
+      - ckan_ingress.yaml
       # - ckan_cronjob.yaml
 
 - name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  

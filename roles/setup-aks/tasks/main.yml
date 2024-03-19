@@ -91,7 +91,6 @@
     resource_group: "{{ resource_group_name }}"
     admin_user_enabled: true
     sku: Premium
-    # public-network-enabled: false # TODO: this isn't supported so will need doing with the CLI
 
 - name: Create key vault
   azure_rm_keyvault:
@@ -134,52 +133,4 @@
           - "vault"
     subnet:
       id: "{{subnet_output.state.id}}"
-  
-# No ansible for this, so using CLI
-- name: Create Front Door Profile
-  command: >
-    az afd profile create \
-    --profile-name {{resource_prefix}}-afd \
-    --resource-group {{ resource_group_name }} \
-    --sku Premium_AzureFrontDoor
-
-- name: Create Front Door Endpoint
-  command: >
-    az afd endpoint create \
-      --resource-group {{ resource_group_name }} \
-      --profile-name {{resource_prefix}}-afd \
-      --endpoint-name {{resource_prefix}}-in \
-      --enabled-state Enabled
-
-- name: Create Front Door Origin Group
-  command: >      
-    az afd origin-group create \
-    --resource-group {{ resource_group_name }} \
-    --profile-name {{resource_prefix}}-afd \
-    --origin-group-name {{resource_prefix}}-aks-og \
-    --probe-request-type GET \
-    --probe-protocol Http \
-    --probe-interval-in-seconds 60 \
-    --probe-path / \
-    --sample-size 4 \
-    --successful-samples-required 3 \
-    --additional-latency-in-milliseconds 50
-
-# - name: Create an origin with Private Link to AKS
-#   command: >
-#       az afd origin create -g group 
-#       --host-name example.contoso.com 
-#       --profile-name profile
-#       --origin-group-name originGroup 
-#       --origin-name origin1 
-#       --origin-host-header example.contoso.com 
-#       --priority 1 
-#       --weight 500 
-#       --enabled-state Enabled 
-#       --http-port 80
-#       --https-port 443 
-#       --private-link-resource /subscriptions/00000000-0000-0000-0000-
-#       000000000000/resourceGroups/group/providers/Microsoft.Storage/storageAccounts/plstest
-#       --private-link-location EastUS 
-#       --private-link-request-message 'Please approve this request'
-#       --private-link-sub-resource-type table
+ 
