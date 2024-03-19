@@ -1,0 +1,80 @@
+ 
+# No ansible for this, so using CLI mostly
+
+- name: Get subscription_id for later
+  azure.azcollection.azure_rm_subscription_info:
+    all: true
+  register: subscription_output
+
+
+- name: Create Front Door Profile
+  command: >
+    az afd profile create \
+    --profile-name {{resource_prefix}}-afd \
+    --resource-group {{ resource_group_name }} \
+    --sku Premium_AzureFrontDoor
+
+- name: Create Front Door Endpoint
+  command: >
+    az afd endpoint create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{resource_prefix}}-afd \
+      --endpoint-name {{resource_prefix}}-in \
+      --enabled-state Enabled
+
+- name: Create Front Door Origin Group
+  command: >      
+    az afd origin-group create \
+    --resource-group {{ resource_group_name }} \
+    --profile-name {{resource_prefix}}-afd \
+    --origin-group-name {{resource_prefix}}-aks-og \
+    --probe-request-type GET \
+    --probe-protocol Http \
+    --probe-interval-in-seconds 60 \
+    --probe-path / \
+    --sample-size 4 \
+    --successful-samples-required 3 \
+    --additional-latency-in-milliseconds 50
+
+- name: AKS Cluster
+  azure_rm_aks_info:
+    name: "{{resource_prefix}}-aks"
+    resource_group: "{{ resource_group_name }}"
+  register: aks_output
+
+- name: Show SP
+  debug: "msg={{ aks_output.aks[0] }}"
+
+# get details for the Private Link Service that has been created for the CKAN k8s service
+- name: Get Private Link Service details
+  command: >
+    az network private-link-service show \
+    --name ckan-pls \
+    --resource-group "{{aks_output.aks[0].node_resource_group}}" \
+    -o json
+  register: pls_ckan_output
+
+- set_fact:
+    ckan_pls_alias: "{{ (pls_ckan_output.stdout|from_json).alias }}"
+
+- name: Show pls
+  debug: "msg={{ ckan_pls_alias }}"
+
+- name: Create an origin with Private Link to AKS
+  command: >
+      az afd origin create -g group 
+      --host-name {{ ckan_pls_alias }}
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{resource_prefix}}-afd \
+      --origin-group-name {{resource_prefix}}-aks-og \
+      --origin-name ckan-origin \ 
+      --priority 1 \
+      --weight 500 \
+      --enabled-state Enabled \
+      --http-port 80 \
+      --https-port 443 \ 
+      --private-link-resource "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{aks_output.aks[0].node_resource_group}}/providers/Microsoft.Network/privateLinkServices/ckan-pls" \
+      --private-link-request-message 'Please approve this request' \
+      --private-link-sub-resource-type table
+
+# TODO add route
