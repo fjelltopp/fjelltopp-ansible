@@ -1,11 +1,9 @@
----
-# Make an if
-# storageClassName: "efs-client" # AWS
-storage_class_name: managed-csi # Azure
+# TODO move up a level as is duplicated in CKAN
 
+resource_prefix: "{{application_name}}-{{resource_group_environment}}"
+resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
+node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
-### TODO this properly
-azure_db_admin_password: te142ASDS(£$&@)(@$*)@*$mp #### TODO look this up
 
 # Defaults
 rds_storage_size: 32 # 20 on aws (gb), 32 on azure (min)
@@ -22,3 +20,4 @@ azure_db_admin_username: "{{ rds_admin_username }}"
 azure_db_backup_retention_period: "{{ rds_backup_retention }}"
 azure_db_allocated_storage: "{{ rds_storage_size }}"
 
+azure_db_admin_password: te142ASDS(£$&@)(@$*)@*$mp ####

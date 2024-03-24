@@ -16,3 +16,4 @@
   roles:
     - { role: setup-aks, tags: ["setup", "all", "aks"] }
     - { role: setup-azure-frontdoor, tags: ["frontdoor"] }
+    - { role: setup-azure-db, tags: ["db"] }

@@ -4,6 +4,29 @@
     az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
     --command "kubectl create namespace {{ application_namespace }}"
 
+# - name: Get database info
+#   azure.azcollection.azure_rm_postgresqlserver_info:
+#     resource_group: "{{ resource_group_name }}"
+#     name: "{{resource_prefix}}-db"
+#   register: database_info_output_raw
+
+- name: Show database info
+  command: >
+    az postgres flexible-server show \
+      --resource-group {{ resource_group_name }} \
+      --name "{{resource_prefix|lower}}-db1"
+  register: database_info_output_raw
+
+
+- name: Log database info
+  debug: "msg={{ database_info_output_raw }}"
+
+- set_fact:
+    db_fqdn: "{{ (database_info_output_raw.stdout|from_json).fullyQualifiedDomainName }}"
+
+- name: Log fqdn
+  debug: "msg={{ db_fqdn }}"
+
 ## TODO move to secrets!
 - name: Generate Beaker session secret
   set_fact:
@@ -15,49 +38,10 @@
     ckan_api_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
   when: not ckan_api_secret|default(None)  
 
-# - name: Get information about an RDS CKAN instance
-#   community.aws.rds_instance_info:
-#     region: "{{ aws_region }}"
-#     db_instance_identifier: "{{ application_namespace }}-rds"
-#   when: fjelltopp_env_type != 'local'
-#   register: ckan_rds_info
-
-# - name: Deploy Ingress
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
-#     namespace: "{{ application_namespace }}"
-#     kubeconfig: "{{ kubeconfig }}"
-#   become: false
-#   with_items:
-#     - nginx-ingress-tls-elb_v1_0_0.yaml
-#   when: ckan_tls_name is defined
-
-
-# - name: Setup Database
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
-#     namespace: "{{ application_namespace }}"
-#     kubeconfig: "{{ kubeconfig }}"
-#   become: false
-#   with_items:
-#     - db.yaml
-
-# # Based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore
-# - name: Init CKAN schema in RDS
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
-#     namespace: "{{ application_namespace }}"
-#     kubeconfig: "{{ kubeconfig }}"
-#   become: false
-#   with_items:
-#     - ckandb_job.yaml
-
 - name: Set K8S Yaml files
   set_fact:
     k8s_yaml:
+      - ckandb_job.yaml
       - solr.yaml
       - datapusher.yaml
       - redis.yaml
@@ -83,10 +67,10 @@
     --file "{{ lookup('first_found', 'templates/kubernetes/aks/out/{{ item }}') }}"
   with_items: "{{ k8s_yaml }}"
 
-- name: Clean up templated files
-  command: >
-    rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
-  with_items: "{{ k8s_yaml }}"
+# - name: Clean up templated files
+#   command: >
+#     rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+#   with_items: "{{ k8s_yaml }}"
 
 # - name: Setup backup job
 #   kubernetes.core.k8s:

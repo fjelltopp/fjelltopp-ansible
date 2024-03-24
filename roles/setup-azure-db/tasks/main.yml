@@ -1,0 +1,44 @@
+
+# - name: Create RDS password if missing
+#   block:
+- name: Generate password
+  set_fact:
+    new_rds_admin_password: "{{lookup('community.general.random_string', length=32, special=false)}}"
+  when: not azure_db_admin_password|default(None)
+
+# - name: Add string to AWS Secrets Manager
+#   community.aws.aws_secret:
+#     region: "{{ aws_region }}"
+#     name: "{{application_namespace}}_rds_admin_pw"
+#     state: present
+#     secret_type: 'string'
+#     secret: "{{ new_rds_admin_password }}"
+#   when: not rds_admin_password|default(None)
+
+- name: Update rds_admin_password
+  set_fact:
+    azure_db_admin_password: "{{ new_azure_db_admin_password }}"
+  when: new_azure_db_admin_password|default(None)
+  # become: false
+
+
+- name: Show Admin Pass
+  debug: "msg={{ azure_db_admin_password }}"
+
+  
+# TODO check if exists!
+# azure.azcollection.azure_rm_postgresqlserver creates a single instance which Azure is retiring March 2025. Ansiblw will support flexible server when https://github.com/ansible-collections/azure/issues/714 ships. For now, do it the hard way
+- name: Create Postgres flexible server
+  command: >
+    az postgres flexible-server create \
+      --resource-group {{ resource_group_name }} \
+      --admin-password "{{ azure_db_admin_password }}" \
+      --admin-user "{{ azure_db_admin_username }}" \
+      --backup-retention "{{ azure_db_backup_retention_period }}" \
+      --database-name ckan \
+      --name "{{resource_prefix|lower}}-db1"
+      --sku-name Standard_B2s
+      --storage-size "{{ azure_db_allocated_storage }}" \
+      --tier Burstable
+      --version "13"
+      --yes
