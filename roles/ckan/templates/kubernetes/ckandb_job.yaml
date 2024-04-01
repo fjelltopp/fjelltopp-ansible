@@ -5,7 +5,11 @@ metadata:
   name: ckan-db-bootstrap
 data:
   ckan_db_bootstrap.sh: "{{ lookup('template', 'templates/ckan/db_init.sh') | b64encode }}"
+{% if fjelltopp_cloud_provider == 'azure' %}
+  ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init_azure.sql') | b64encode }}"
+{ % else %}
   ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init.sql') | b64encode }}"
+{% endif %}
 type: Opaque
 
 ---
