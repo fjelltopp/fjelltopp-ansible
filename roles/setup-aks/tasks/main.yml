@@ -9,7 +9,12 @@
     name: "{{ resource_group_name }}"
     location: "{{ azure_region }}"
 
-- name: Create dedicated Virtual Network
+- name: Create private DNS zone for the datalake
+  azure.azcollection.azure_rm_privatednszone:
+    resource_group: "{{ resource_group_name }}"
+    name: "privatelink.blob.core.windows.net"
+      
+- name: Create Virtual Network for AKS
   azure_rm_virtualnetwork:
     resource_group: "{{ resource_group_name }}"
     name: "{{resource_prefix}}-v-net"
@@ -70,14 +75,53 @@
     role_definition_id: "/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7" # Network Contributor (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/networking#network-contributor)
     scope: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.Network/virtualNetworks/{{resource_prefix}}-v-net"
 
+# Can only create a container from here in a public storage account. Rather than set it public every time, we should check if the target container exists and create it if it doesn't.
 - name: Create a storage account for the data lake
   azure_rm_storageaccount:
     resource_group: "{{ resource_group_name }}"
     name: "{{ storage_account_name }}"
     kind: StorageV2
     type: Standard_ZRS
-    is_hns_enabled: true
+    is_hns_enabled: true # This is what makes it a 'data lake v2'
     public_network_access: Disabled
+
+### Dont do this for now!
+# - name: Create container
+#   azure_rm_storageblob:
+#     resource_group: "{{ resource_group_name }}"
+#     storage_account_name: "{{ storage_account_name }}"
+#     container: "{{ resource_prefix|lower }}-datalake"
+# - name: Create file container with CLI
+#   command: >
+#     az storage fs create -n {{resource_prefix|lower}}-datalake --account-name {{ storage_account_name }} 
+
+# - name: Update storage account to private
+#   azure_rm_storageaccount:
+#     resource_group: "{{ resource_group_name }}"
+#     name: "{{ storage_account_name }}"
+#     public_network_access: Disabled 
+
+- name: Create private endpoint for DataLake
+  azure.azcollection.azure_rm_privateendpoint:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-pe-storage"
+    state: present
+    private_link_service_connections:
+      - name: "{{resource_prefix}}-pe-storage"
+        private_link_service_id: /subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.Storage/storageAccounts/{{ storage_account_name }}
+        group_ids: 
+          - "blob"
+    subnet:
+      id: "{{subnet_output.state.id}}"
+
+- name: Create zone group for storage private endpoint
+  azure.azcollection.azure_rm_privateendpointdnszonegroup:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix|lower}}-pe-storage-dns"
+    private_endpoint: "{{resource_prefix}}-pe-storage"
+    private_dns_zone_configs:
+      - name: "default"
+        private_dns_zone: "privatelink.blob.core.windows.net"
 
 - name: Create managed disk for k8s nodes
   azure_rm_manageddisk:
@@ -92,11 +136,19 @@
     admin_user_enabled: true
     sku: Premium
 
+- name: Grant AKS access to ACR
+  command: |
+    az aks update -g {{ resource_group_name }} -n {{resource_prefix}}-aks --attach-acr {{acr_name}}
+  register: acr_output
+
+- name: Show ACR output
+  debug: "msg={{ acr_output }}"
+
 - name: Create key vault
   azure_rm_keyvault:
     resource_group: "{{ resource_group_name }}"
     # vault_name: "{{resource_prefix}}-keyvault"
-    vault_name: "{{ vault_name}}"
+    vault_name: "{{ vault_name }}"
     vault_tenant: "{{ subscription_output.subscriptions[0].tenant_id }}"
     sku:
       family: A
@@ -127,7 +179,7 @@
     name: "{{resource_prefix}}-pe-keyvault"
     state: present
     private_link_service_connections:
-      - name: "{{resource_prefix}}-pe-acr"
+      - name: "{{resource_prefix}}-pe-keyvault"
         private_link_service_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.KeyVault/vaults/{{vault_name}}"
         group_ids: 
           - "vault"
