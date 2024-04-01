@@ -6,6 +6,11 @@ TRANSFER_ADAPTERS:
       storage_class: giftless.storage.amazon_s3:AmazonS3Storage
       storage_options:
         bucket_name: {{ giftless_s3_bucket }}
+{% elif giftless_azure_blob_string is defined %}        
+      storage_class: giftless.storage.azure:AzureBlobsStorage
+      storage_options:
+        connection_string: "{{ giftless_azure_blob_string }}"
+        container_name: "{{ resource_prefix|lower }}-datalake"
 {% else %}
       storage_class: giftless.storage.local_storage:LocalStorage
 {% endif %}

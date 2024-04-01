@@ -114,8 +114,6 @@ spec:
               name: ckan-storage
             - mountPath: /var/lib/ckan/webassets
               name: ckan-webassets
-
-
 {% endif %}
       containers:
         - env:
@@ -134,27 +132,33 @@ spec:
             - name: CKAN_SOLR_URL
               value: "{{ ckan_solr_url }}"
             - name: CKAN_SQLALCHEMY_URL
-              value: {{ ckan_sqlalchemy_url }}
+              value: "{{ ckan_sqlalchemy_url }}"
             - name: DS_RO_PASS
               value: "{{ ckan_ds_ro_pass }}"
             - name: POSTGRES_PASSWORD
               value: "{{ ckan_postgres_password }}"
             - name: PIPENV_DONT_LOAD_ENV
               value: "1"
+            - name: POSTGRES_HOST
+              value: "{{ db_fqdn }}"
+{% if fjelltopp_cloud_provider != 'azure' %}
             - name: AWS_DEFAULT_REGION
               value: "{{ aws_region }}"
+{% endif %}
 {% if fjelltopp_env_type == 'local' %}
             - name: HOME
               value: "/usr/lib/ckan"
 {% endif %}
           image: {{ ckan_image }}:{{ ckan_image_tag }}
+          
+
 {% if fjelltopp_env_type == 'local' %}
           imagePullPolicy: IfNotPresent
 {% else %}
           imagePullPolicy: Always
 {% endif %}
-
           name: ckan
+          
 # assume local user uid
 {% if fjelltopp_env_type == 'local' %}
           tty: true
@@ -169,7 +173,7 @@ spec:
             httpGet:
               path: /
               port: 5000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 30
             periodSeconds: 5
             timeoutSeconds: 10
             failureThreshold: 15
@@ -223,7 +227,7 @@ spec:
         - name: ckan-configs
           secret:
             secretName: ckan-configs
-
+{% if fjelltopp_cloud_provider != 'azure' %}
 ---
 apiVersion: v1
 kind: Service
@@ -241,4 +245,4 @@ spec:
     app: ckan
 status:
   loadBalancer: {}
-
+{% endif %}
