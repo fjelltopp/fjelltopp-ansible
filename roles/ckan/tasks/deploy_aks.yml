@@ -55,7 +55,8 @@
     ckan_api_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
   when: not ckan_api_secret|default(None)  
 
-- name: Set K8S Yaml files
+# We list the files we want to process here, so we can template them
+- name: Set list of k8s yaml files to process
   set_fact:
     k8s_yaml:
       - ckandb_job.yaml
@@ -69,6 +70,7 @@
       - ckan_ingress.yaml
       # - ckan_cronjob.yaml
 
+# Look up the files, defaulting to the cloud provider specific version, falling back to a generic version
 - name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  
   template:
     src: "{{ lookup('first_found', 'templates/kubernetes/aks/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
@@ -84,8 +86,6 @@
     --command "kubectl apply -n {{ application_namespace }} -f {{item}}" \
     --file "{{ lookup('first_found', 'templates/kubernetes/aks/out/{{ item }}') }}"
   with_items: "{{ k8s_yaml }}"
-
-
 
 - name: Clean up templated files
   command: >
