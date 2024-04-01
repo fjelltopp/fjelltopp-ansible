@@ -1,24 +1,11 @@
 ---
-# Make an if
-# storageClassName: "efs-client" # AWS
+# The K8S storage types change depending on the cloud provider
+{% if fjelltopp_cloud_provider == 'azure' %}
 storage_class_name: managed-csi # Azure
-
+{% else %}  
+storageClassName: "efs-client" # AWS
+{% endif %}
 
 ### TODO this properly
-azure_db_admin_password: te142ASDS(£$&@)(@$*)@*$mp #### TODO look this up
 
-# Defaults
-rds_storage_size: 32 # 20 on aws (gb), 32 on azure (min)
-rds_instance_type: db.t3.small
-rds_postgres_version: "13.3"
-rds_admin_username: ckan_admin
-rds_multi_AZ: false
-rds_backup_retention: 7 # default is 3, min on azure is 7
-# rds_admin_password: "{{ lookup('amazon.aws.aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region, on_missing='skip', on_deleted='skip' ) }}"
-
-
-# Map RDS names to azure where possible
-azure_db_admin_username: "{{ rds_admin_username }}"
-azure_db_backup_retention_period: "{{ rds_backup_retention }}"
-azure_db_allocated_storage: "{{ rds_storage_size }}"
 

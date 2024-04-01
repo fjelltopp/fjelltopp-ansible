@@ -1,9 +1,4 @@
 ---
-resource_prefix: "{{application_name}}-{{resource_group_environment}}"
-resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
-node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
-
-
 basic_http_auth: false
 # defaults file for ckan
 ckan_pod_replicas_nr: 1

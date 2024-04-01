@@ -1,0 +1,26 @@
+k8s_version: "1.29.0" #  ['1.29.0', '1.28.5', '1.28.3', '1.27.9', '1.27.7', '1.26.12', '1.26.10']. AWS is on 1.24
+azure_region: "westeurope" # ['westeurope', 'northeurope']
+
+# Mostly just copy the RDS values from all
+vpc_cidr_block: "{{ eks_vpc_cidr_block }}"
+vpc_cidr_subnet1: "{{ eks_vpc_cidr_subnet1 }}"
+vpc_cidr_subnet2: "{{ eks_vpc_cidr_subnet2 }}"
+vpc_cidr_subnet3: "{{ eks_vpc_cidr_subnet3 }}"
+
+db_vpc_cidr_block: "172.18.0.0/16"
+db_vpc_cidr_subnet: "172.18.0.0/18"
+
+worker_nodes_min: "{{ eks_worker_nodes_min }}"
+worker_nodes_max: "{{ eks_worker_nodes_max }}"
+worker_nodes_desired: 1
+worker_instance_type: "standard_a2_v2"
+
+# Values used for naming resources and groups to fit in the Azure deploys
+application_name: "FjelltoppCKAN" # 2-15 Characters
+resource_group_environment: "D" # Development, Valid values for WHO are U, D, T, P. Used for naming resources and groups
+resource_group_region: EUW # EUW, EUN as appropriate
+
+# Generated names from the vars above
+resource_prefix: "{{application_name}}-{{resource_group_environment}}"
+resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
+node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"

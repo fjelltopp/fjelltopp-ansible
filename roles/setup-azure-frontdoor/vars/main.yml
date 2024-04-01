@@ -1,5 +1,5 @@
-# TODO move up a level as is duplicated in CKAN
+# # TODO move up a level as is duplicated in CKAN
 
-resource_prefix: "{{application_name}}-{{resource_group_environment}}"
-resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
-node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
+# resource_prefix: "{{application_name}}-{{resource_group_environment}}"
+# resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
+# node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"

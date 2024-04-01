@@ -1,0 +1,16 @@
+db_admin_username: ckan_admin
+
+# Defaults
+rds_storage_size: 20 
+rds_instance_type: db.t3.small
+rds_postgres_version: "13.3"
+rds_admin_username: "{{ db_admin_username }}"
+rds_multi_AZ: false
+rds_backup_retention: 3
+# rds_admin_password: "{{ lookup('amazon.aws.aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region, on_missing='skip', on_deleted='skip' ) }}"
+
+# Azure Defaults. These are the defaults for Azure Postgres Flexible Server, based on RDS where possible
+azure_db_admin_username: "{{ db_admin_username }}"
+azure_db_backup_retention_period: 7 # We default to 3 on RDS but 7 is the Azure min
+azure_db_allocated_storage: 32 # AWS min is 20, Azure is 32
+db_server_name: "{{resource_prefix|lower}}-db002"
