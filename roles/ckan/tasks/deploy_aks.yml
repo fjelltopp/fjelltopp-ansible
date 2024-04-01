@@ -10,13 +10,30 @@
 #     name: "{{resource_prefix}}-db"
 #   register: database_info_output_raw
 
+- name: Get datalake info
+  azure.azcollection.azure_rm_storageaccount_info:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ storage_account_name }}"
+  register: datalake_info_output_raw
+
+- name: Log datalake info
+  debug: "msg={{ datalake_info_output_raw }}"
+
+- name: Get private link service info by name
+  azure.azcollection.azure_rm_privatelinkservice_info:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-pe-storage"
+  register: datalake_pl_output_raw
+
+- name: Log datalake info
+  debug: "msg={{ datalake_pl_output_raw }}"
+
 - name: Show database info
   command: >
     az postgres flexible-server show \
       --resource-group {{ resource_group_name }} \
-      --name "{{resource_prefix|lower}}-db1"
+      --name "{{resource_prefix|lower}}-db002"
   register: database_info_output_raw
-
 
 - name: Log database info
   debug: "msg={{ database_info_output_raw }}"
@@ -42,11 +59,11 @@
   set_fact:
     k8s_yaml:
       - ckandb_job.yaml
+      # - shell.yml # only for dev
       - solr.yaml
       - datapusher.yaml
       - redis.yaml
-      # - giftless.yaml
-      # - giftless_ingress.yaml
+      - giftless.yaml
       - ckan_volumes.yaml
       - ckan.yaml
       - ckan_ingress.yaml
@@ -58,6 +75,7 @@
     dest: "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
   with_items: "{{ k8s_yaml }}"  
 
+# This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
 - name: Deploy CKAN
   command: >
     az aks command invoke \
@@ -67,10 +85,12 @@
     --file "{{ lookup('first_found', 'templates/kubernetes/aks/out/{{ item }}') }}"
   with_items: "{{ k8s_yaml }}"
 
-# - name: Clean up templated files
-#   command: >
-#     rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
-#   with_items: "{{ k8s_yaml }}"
+
+
+- name: Clean up templated files
+  command: >
+    rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"
 
 # - name: Setup backup job
 #   kubernetes.core.k8s:
