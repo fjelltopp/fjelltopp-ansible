@@ -6,7 +6,6 @@
     all: true
   register: subscription_output
 
-
 - name: Create Front Door Profile
   command: >
     az afd profile create \
@@ -14,12 +13,20 @@
     --resource-group {{ resource_group_name }} \
     --sku Premium_AzureFrontDoor
 
-- name: Create Front Door Endpoint
+- name: Create Front Door Endpoint For Ckan
   command: >
     az afd endpoint create \
       --resource-group {{ resource_group_name }} \
       --profile-name {{resource_prefix}}-afd \
-      --endpoint-name {{resource_prefix}}-in \
+      --endpoint-name {{resource_prefix}}-ckan \
+      --enabled-state Enabled
+
+- name: Create Front Door Endpoint For Giftless
+  command: >
+    az afd endpoint create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{resource_prefix}}-afd \
+      --endpoint-name {{resource_prefix}}-ckan \
       --enabled-state Enabled
 
 - name: Create Front Door Origin Group
@@ -46,7 +53,7 @@
   debug: "msg={{ aks_output.aks[0] }}"
 
 # get details for the Private Link Service that has been created for the CKAN k8s service
-- name: Get Private Link Service details
+- name: Get Private Link Service details (ckan)
   command: >
     az network private-link-service show \
     --name ckan-pls \
