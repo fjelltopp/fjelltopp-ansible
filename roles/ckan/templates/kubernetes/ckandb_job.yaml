@@ -5,11 +5,7 @@ metadata:
   name: ckan-db-bootstrap
 data:
   ckan_db_bootstrap.sh: "{{ lookup('template', 'templates/ckan/db_init.sh') | b64encode }}"
-{% if fjelltopp_cloud_provider == 'azure' %}
-  ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init_azure.sql') | b64encode }}"
-{ % else %}
   ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init.sql') | b64encode }}"
-{% endif %}
 type: Opaque
 
 ---
@@ -28,8 +24,7 @@ spec:
               value: "{{ ckan_rds_info.instances[0].endpoint.address }}"
             - name: POSTGRES_USER
               value: "{{ rds_admin_username }}"
-            - name: POSTGRES_PASSWORD
-              value: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
+            
           name: ckan-db-init
           image: postgres:13
           command: ['bash', '-c']
