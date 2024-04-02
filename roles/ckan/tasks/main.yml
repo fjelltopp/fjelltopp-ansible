@@ -6,15 +6,14 @@
 - include_tasks: ./secrets.yml
   when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure'
 
-# TODO: bootstrap Azure secrets
-# - include_tasks: ./azure_secrets.yml
-#   when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'azure'
+- include_tasks: ./azure_secrets.yml
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'azure'
 
 - include_role:
     name: k8s-context
   when: fjelltopp_env_type == 'local'
 
-- include_tasks: ./deploy_aks.yml
+- include_tasks: ./azure_deploy.yml
   when: fjelltopp_cloud_provider == 'azure'
 
 - include_tasks: ./deploy.yml
