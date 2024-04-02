@@ -154,9 +154,20 @@
       family: A
       name: standard
     access_policies:
+      # Allow AKS to read secrets
       - tenant_id: "{{ subscription_output.subscriptions[0].tenant_id }}"
         object_id: "{{ aks_sp }}"
         keys:
+          - get
+          - list
+        secrets:
+          - get
+          - list
+      # Allow Ansible to read/write secrets    
+      - tenant_id: "{{ subscription_output.subscriptions[0].tenant_id }}"
+        object_id: "{{ vault_object_id}}"
+        secrets:
+          - set
           - get
           - list
 
