@@ -33,3 +33,6 @@ giftless_pls_name: giftless-pls1
 ckan_superuser_name: "superuser"  
 ckan_superuser_email: "super@example.com"
 ckan_superuser_password: "password"  
+
+# This is an azure object ID that will have access to the KeyVault. It should be the object ID of the service principal that is used to run the ansible scripts
+vault_object_id: 000000-0000-000-0000
