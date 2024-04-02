@@ -47,8 +47,9 @@
 - name: Log fqdn
   debug: "msg={{ db_fqdn }}"
 
-- set_fact:  
-    ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
+- set_fact:  # TODO fix
+    # ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
+    ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@172.18.0.4/ckan"
 
 ## TODO move to secrets!
 - name: Generate Beaker session secret

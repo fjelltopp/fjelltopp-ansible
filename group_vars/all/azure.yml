@@ -28,3 +28,8 @@ node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 # Names for the private link services between K8S and Front Door
 ckan_pls_name: ckan-pls
 giftless_pls_name: giftless-pls1
+
+# OVERRIDE THESE
+ckan_superuser_name: "superuser"  
+ckan_superuser_email: "super@example.com"
+ckan_superuser_password: "password"  

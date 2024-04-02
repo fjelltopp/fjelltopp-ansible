@@ -3,3 +3,4 @@
   become: false
   roles:
     - { role: ckan, tags: ["deploy", "all"] }
+    - { role: bootstrap_ckan, tags: ["bootstrap"] }
