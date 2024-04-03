@@ -78,15 +78,16 @@
   command: >
       az afd origin create -g group 
       --host-name {{ ckan_pls_alias }} \
+      --origin-host-header {{ ckan_fqdn }} \
       --resource-group {{ resource_group_name }} \
       --profile-name {{resource_prefix}}-afd \
       --origin-group-name {{resource_prefix}}-og-ckan \
       --origin-name ckan-origin \ 
       --priority 1 \
-      --weight 500 \
+      --weight 1000 \
       --enabled-state Enabled \
-      --http-port 5000 \
-      --https-port 5000 \ 
+      --http-port 80 \
+      --https-port 80 \ 
       --enable-private-link true \
       --private-link-resource "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}/providers/Microsoft.Network/privateLinkServices/{{ ckan_pls_name }}" \
       --private-link-request-message 'Please approve this request' \
@@ -102,18 +103,19 @@
   register: giftless_pls_output
 
 - set_fact:
-    ckan_pls_alias: "{{ (giftless_pls_output.stdout|from_json).alias }}"
+    giftless_pls_alias: "{{ (giftless_pls_output.stdout|from_json).alias }}"
 
 - name: Create an origin with Private Link to AKS (Giftless)
   command: >
       az afd origin create -g group 
-      --host-name {{ ckan_pls_alias }} \
+      --host-name {{ giftless_pls_alias }} \
+      --origin-host-header {{ giftless_pls_alias }} \
       --resource-group {{ resource_group_name }} \
       --profile-name {{resource_prefix}}-afd \
       --origin-group-name {{resource_prefix}}-og-giftless \
       --origin-name ckan-origin \ 
       --priority 1 \
-      --weight 500 \
+      --weight 1000 \
       --enabled-state Enabled \
       --enable-private-link true \
       --http-port 5001 \
