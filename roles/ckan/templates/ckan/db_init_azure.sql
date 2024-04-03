@@ -1,8 +1,8 @@
 /* based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore */
 CREATE EXTENSION POSTGIS;
-CREATE ROLE ckan NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ azure_db_admin_password }}';
-CREATE ROLE datastore_ro NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ azure_db_admin_password }}';
-CREATE ROLE datastore NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ azure_db_admin_password }}';
+CREATE ROLE ckan NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_postgres_password }}';
+CREATE ROLE datastore_ro NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_ro_pass }}';
+CREATE ROLE datastore NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_rw_pass }}';
 GRANT ckan to {{ azure_db_admin_username }};
 GRANT datastore to {{ azure_db_admin_username }};
 GRANT datastore to ckan;
