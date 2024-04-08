@@ -7,12 +7,6 @@
 - set_fact: 
     storage_class_name: managed-csi # Azure
 
-# - name: Get database info
-#   azure.azcollection.azure_rm_postgresqlserver_info:
-#     resource_group: "{{ resource_group_name }}"
-#     name: "{{resource_prefix}}-db"
-#   register: database_info_output_raw
-
 - name: Get datalake info
   azure.azcollection.azure_rm_storageaccount_info:
     resource_group: "{{ resource_group_name }}"
@@ -41,26 +35,15 @@
 - name: Log database info
   debug: "msg={{ database_info_output_raw }}"
 
-- set_fact:
-    db_fqdn: "{{ (database_info_output_raw.stdout|from_json).fullyQualifiedDomainName }}"
+- set_fact: # TODO fix dns
+    # db_fqdn: "{{ (database_info_output_raw.stdout|from_json).fullyQualifiedDomainName }}"
+    db_fqdn: "172.18.0.4"
 
 - name: Log fqdn
   debug: "msg={{ db_fqdn }}"
 
-- set_fact:  # TODO fix
-    # ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
-    ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@172.18.0.4/ckan"
-
-## TODO move to secrets!
-- name: Generate Beaker session secret
-  set_fact:
-    ckan_beaker_secret: "{{ lookup('community.general.random_string', length=25, special=false) }}"
-  when: not ckan_beaker_secret|default(None) 
-
-- name: Generate API token secret
-  set_fact:
-    ckan_api_secret: "{{ lookup('community.general.random_string', length=64, special=false) }}"
-  when: not ckan_api_secret|default(None)  
+- set_fact:
+    ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
 
 # We list the files we want to process here, so we can template them
 - name: Set list of k8s yaml files to process

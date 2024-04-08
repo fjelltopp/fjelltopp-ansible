@@ -20,6 +20,7 @@
       --profile-name {{resource_prefix}}-afd \
       --endpoint-name {{resource_prefix|lower}}-ckan \
       --enabled-state Enabled
+  register: ckan_endpoint_output
 
 - name: Create Front Door Endpoint For Giftless
   command: >
@@ -28,6 +29,55 @@
       --profile-name {{resource_prefix}}-afd \
       --endpoint-name {{resource_prefix|lower}}-giftless \
       --enabled-state Enabled
+  register: giftless_endpoint_output
+
+- set_fact: 
+    ckan_hostname: "https://{{ (ckan_endpoint_output.stdout|from_json).hostName }}"
+
+- name: Add a ruleset to set CORS headers for Giftless
+  command: >
+     az afd rule-set create \
+      --resource-group {{ resource_group_name }} \
+      --name giftlesscors \
+      --profile-name {{resource_prefix}}-afd
+
+- name: CORS Origin header and condition base rule
+  command: >
+    az afd rule create \
+      --resource-group {{ resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{resource_prefix}}-afd \
+      --rule-name corsheaders \
+      --selector Origin \
+      --match-variable RequestHeader \
+      --operator Equal \
+      --match-values {{ ckan_hostname }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Origin \
+      --header-value {{ ckan_hostname }}
+
+- name: Add CORS Headers header to rule
+  command: >
+    az afd rule action add --resource-group {{ resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{resource_prefix}}-afd \
+      --rule-name corsheaders \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Headers \
+      --header-value '*'
+
+- name: Add CORS Method header to rule
+  command: >
+    az afd rule action add --resource-group {{ resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{resource_prefix}}-afd \
+      --rule-name corsheaders \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Methods \
+      --header-value '*'
 
 # Origin Groups
 - name: Create Front Door Origin Group (CKAN)
@@ -93,7 +143,6 @@
       --private-link-request-message 'Please approve this request' \
       --private-link-location {{ azure_region }}
 
-
 - name: Get Private Link Service details (giftless)
   command: >
     az network private-link-service show \
@@ -152,7 +201,8 @@
     --supported-protocols Https \
     --link-to-default-domain Enabled \
     --https-redirect Enabled \
-    --forwarding-protocol HttpOnly
+    --forwarding-protocol HttpOnly \
+    --rule-sets giftlesscors
 
 - name: Get PLS details for approval (CKAN)
   command: >

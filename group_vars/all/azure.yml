@@ -16,7 +16,7 @@ worker_nodes_desired: 1
 worker_instance_type: "standard_a2_v2"
 
 # Values used for naming resources and groups to fit in the Azure deploys
-application_name: "FjelltoppCKAN" # 2-15 Characters
+application_name: "FjelltoppCKAN5" # 2-15 Characters
 resource_group_environment: "D" # Development, Valid values for WHO are U, D, T, P. Used for naming resources and groups
 resource_group_region: EUW # EUW, EUN as appropriate
 
@@ -29,7 +29,7 @@ node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 ckan_pls_name: ckan-pls
 giftless_pls_name: giftless-pls1
 
-# OVERRIDE THESE
+# OVERRIDE THESE. Add to separate vault
 ckan_superuser_name: "superuser"  
 ckan_superuser_email: "super@example.com"
 ckan_superuser_password: "password"  
