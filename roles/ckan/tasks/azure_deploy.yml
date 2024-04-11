@@ -1,4 +1,10 @@
 ---
+
+- name: Get subscription_id for later
+  azure.azcollection.azure_rm_subscription_info:
+    all: true
+  register: subscription_output
+
 - name: Create CKAN namespace
   command: >
     az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
@@ -44,7 +50,8 @@
 
 - set_fact:
     ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
-
+    disk_prefix: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}providers/Microsoft.Compute/disks/FjelltoppCKAN5-D-aks-disk-"
+    
 # We list the files we want to process here, so we can template them
 - name: Set list of k8s yaml files to process
   set_fact:
