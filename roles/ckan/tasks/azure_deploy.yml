@@ -41,9 +41,8 @@
 - name: Log database info
   debug: "msg={{ database_info_output_raw }}"
 
-- set_fact: # TODO fix dns
-    # db_fqdn: "{{ (database_info_output_raw.stdout|from_json).fullyQualifiedDomainName }}"
-    db_fqdn: "172.18.0.4"
+- set_fact:
+    db_fqdn: "{{ (database_info_output_raw.stdout|from_json).fullyQualifiedDomainName }}"
 
 - name: Log fqdn
   debug: "msg={{ db_fqdn }}"
@@ -51,13 +50,25 @@
 - set_fact:
     ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
     disk_prefix: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}providers/Microsoft.Compute/disks/FjelltoppCKAN5-D-aks-disk-"
-    
+
+- name: Get Storage connection string
+  azure.azcollection.azure_rm_storageaccount_info:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{ storage_account_name }}"
+    show_connection_string: true
+  register: storage_account_info
+  when: fjelltopp_cloud_provider == 'azure'
+
+- set_fact:
+    giftless_azure_blob_string: "{{ storage_account_info.storageaccounts[0].primary_endpoints.blob.connectionstring }}"
+  when: fjelltopp_cloud_provider == 'azure'
+
 # We list the files we want to process here, so we can template them
 - name: Set list of k8s yaml files to process
   set_fact:
     k8s_yaml:
       - ckandb_job.yaml
-      # - shell.yml # only for dev
+      - shell.yml # only for dev
       - solr.yaml
       - datapusher.yaml
       - redis.yaml

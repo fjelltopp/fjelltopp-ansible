@@ -82,9 +82,10 @@
     kind: StorageV2
     type: Standard_ZRS
     is_hns_enabled: true # This is what makes it a 'data lake v2'
+    public_network_access: Enabled # We cannot create a container without this?
     network_acls:
       bypass: None
-      default_action: Allow # So we can access it to create a container!
+      default_action: Allow
       virtual_network_rules:
         - id: "{{ subnet_output.state.id }}"
           action: Allow

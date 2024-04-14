@@ -72,4 +72,14 @@
       --vnet {{resource_prefix}}-v-net-db \
       --subnet sb_internal_01_db \
       --yes
-      
+  
+  # Connect the DB database zone with the AKS subnet so it can resolve it
+- name: Create DNS Zone link
+  command: >
+    az network private-dns link vnet create \
+          --name aks-db \
+          --registration-enabled 1 \
+          --resource-group {{ resource_group_name }} \
+          --virtual-network {{resource_prefix}}-v-net \
+          --zone-name {{ db_server_name }}.private.postgres.database.azure.com
+                                      
