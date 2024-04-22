@@ -120,13 +120,6 @@
     - ckan-storage
     - ckan-webassets
 
-- name: Create an azure container registry
-  azure_rm_containerregistry:
-    name: "{{acr_name}}"
-    resource_group: "{{ resource_group_name }}"
-    admin_user_enabled: true
-    sku: Premium
-
 - name: Grant AKS access to ACR
   command: |
     az aks update -g {{ resource_group_name }} -n {{resource_prefix}}-aks --attach-acr {{acr_name}}
@@ -135,7 +128,7 @@
 - name: Show ACR output
   debug: "msg={{ acr_output }}"
 
-- name: Create key vault
+- name: Update key vault to give AKS access
   azure_rm_keyvault:
     resource_group: "{{ resource_group_name }}"
     # vault_name: "{{resource_prefix}}-keyvault"
@@ -156,11 +149,12 @@
           - list
       # Allow Ansible to read/write secrets    
       - tenant_id: "{{ subscription_output.subscriptions[0].tenant_id }}"
-        object_id: "{{ vault_object_id}}"
+        object_id: "{{ vault_object_id }}"
         secrets:
           - set
           - get
           - list
+
 
 - name: Create private endpoint for ACR
   azure.azcollection.azure_rm_privateendpoint:
