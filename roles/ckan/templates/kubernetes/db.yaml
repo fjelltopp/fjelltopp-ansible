@@ -45,7 +45,9 @@ spec:
               value: /var/lib/postgresql/data/db
             - name: POSTGRES_PASSWORD
               value: "{{ ckan_postgres_password }}"
-          image: ckan/postgresql
+            - name: POSTGRES_USER
+              value: "ckan"
+          image: "{{ ckan_db_image }}"
           livenessProbe:
             exec:
               command:
