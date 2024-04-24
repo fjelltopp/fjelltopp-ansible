@@ -1,0 +1,24 @@
+# TODO: confirm settings for this
+- name: Enable Microsoft Defender
+  azure_rm_deployment:
+    resource_group: "{{ resource_group_name }}"
+    location: "{{ azure_region }}"
+    name: Defender
+    template:
+      $schema: "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"
+      contentVersion: "1.0.0.0"
+      resources:
+        - type: "Microsoft.Security/defenderForStorageSettings"
+          apiVersion: "2022-12-01-preview"
+          name: "current"
+          scope: "Microsoft.Storage/storageAccounts/{{ storage_account_name }}"
+          properties:
+            isEnabled: true
+            malwareScanning:
+              onUpload:
+                isEnabled: true
+                capGBPerMonth: 5000
+            sensitiveDataDiscovery:
+              isEnabled: true
+            overrideSubscriptionLevelSettings: true
+
