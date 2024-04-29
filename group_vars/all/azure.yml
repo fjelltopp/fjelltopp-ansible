@@ -25,9 +25,11 @@ resource_prefix: "{{application_name}}-{{resource_group_environment}}"
 resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
 node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
+acr_name: "{{resource_prefix}}-acr"
+
 # Names for the private link services between K8S and Front Door
 ckan_pls_name: ckan-pls
-giftless_pls_name: giftless-pls1
+giftless_pls_name: giftless-pls
 
 # OVERRIDE THESE. Add to separate vault
 ckan_superuser_name: "superuser"  
