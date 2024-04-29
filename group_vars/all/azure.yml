@@ -16,7 +16,7 @@ worker_nodes_desired: 1
 worker_instance_type: "standard_a2_v2"
 
 # Values used for naming resources and groups to fit in the Azure deploys
-application_name: "FjelltoppCKAN5" # 2-15 Characters
+application_name: "FjelltoppCKAN" # 2-15 Characters. No hyphens or underscores
 resource_group_environment: "D" # Development, Valid values for WHO are U, D, T, P. Used for naming resources and groups
 resource_group_region: EUW # EUW, EUN as appropriate
 
@@ -25,16 +25,14 @@ resource_prefix: "{{application_name}}-{{resource_group_environment}}"
 resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
 node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
-acr_name: "{{resource_prefix}}acr"
+acr_name: "{{application_name}}{{resource_group_environment}}acr"
 
 # Names for the private link services between K8S and Front Door
 ckan_pls_name: ckan-pls
 giftless_pls_name: giftless-pls
 
-# OVERRIDE THESE. Add to separate vault
 ckan_superuser_name: "superuser"  
 ckan_superuser_email: "super@example.com"
-# ckan_superuser_password: "password"  
 
 # This is an azure object ID that will have access to the KeyVault. It should be the object ID of the service principal that is used to run the ansible scripts
 vault_object_id: 000000-0000-000-0000
