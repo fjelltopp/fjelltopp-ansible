@@ -1,4 +1,13 @@
 apiVersion: v1
+kind: Secret
+metadata:
+  name: solr-schema
+data:
+  managed-schema: "{{ lookup('template', 'templates/ckan/solr_schema.xml') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   creationTimestamp: null
@@ -52,6 +61,10 @@ spec:
           name: solr
           resources: {}
           volumeMounts:
+            - mountPath: /opt/solr/server/solr/configsets/ckan/conf/managed-schema
+              name: solr-schema
+              subPath: managed-schema
+              readOnly: true
             - mountPath: /opt/solr/server/solr/ckan/data
               name: solr-data
       restartPolicy: Always
@@ -59,6 +72,9 @@ spec:
         - name: solr-data
           persistentVolumeClaim:
             claimName: solr
+        - name: solr-schema
+          secret:
+            secretName: solr-schema
 status: {}
 
 ---

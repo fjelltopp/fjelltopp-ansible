@@ -75,6 +75,27 @@
   # container image
   # when: fjelltopp_env_type == 'local'
 
+- name: Check if DB is alive [local] (10 tries, 5sec interval)
+  community.postgresql.postgresql_ping:
+    db: ckan
+    login_host: "{{ ckan_fqdn }}"
+    login_user: "{{ rds_admin_username }}"
+    login_password: "{{ ckan_postgres_password }}"
+  when: fjelltopp_env_type == 'local'
+  register: db_ping_result
+  retries: 10
+  delay: 5
+  until: db_ping_result.is_available
+  failed_when: not db_ping_result.is_available
+
+- name: Setup database parameters
+  set_fact:
+    ckan_postgres_password: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
+    ckan_ds_ro_pass: "{{ lookup('aws_secret', application_namespace + '_datastore_ro_dbuser_password' , region = aws_region ) }}"
+    ckan_ds_rw_pass: "{{ lookup('aws_secret', application_namespace + '_datastore_dbuser_password' , region = aws_region ) }}"
+    ckan_db_hostname: "{{ ckan_rds_info.instances[0].endpoint.address }}"
+  when: fjelltopp_env_type != 'local'
+
 # Based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore
 - name: Init CKAN schema in RDS
   kubernetes.core.k8s:
@@ -85,7 +106,6 @@
   become: false
   with_items:
     - ckandb_job.yaml
-  when: fjelltopp_env_type != 'local'
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
@@ -126,3 +146,12 @@
   when: fjelltopp_env_type != 'prod' and restore_production_backup
   with_items:
     - db_restore_cronjob.yaml
+
+- name: Check if CKAN returns 200 (20 tries, 60 sec interval)
+  uri:
+    url: "http://{{ ckan_fqdn }}"
+  register: website_get_result
+  until: "website_get_result.status == 200"
+  retries: 20
+  delay: 60
+  when: fjelltopp_env_type == 'local'
