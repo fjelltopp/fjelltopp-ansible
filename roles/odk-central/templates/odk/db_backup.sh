@@ -17,7 +17,7 @@ pgdump=$(command -v pg_dump)
 export AWS_REGION="eu-west-1"
 export AWS_ACCESS_KEY_ID="{{ odk_backup_aws_user_id }}"
 export AWS_SECRET_ACCESS_KEY="{{ odk_backup_aws_user_key }}"
-odk_db_url="postgres://{{ odk_db_user }}:{{ odk_postgres_password }}@{{ odk_db_hostname }}/odk"
+odk_db_url="postgres://{{ odk_db_user }}:{{ odk_postgres_password }}@{{ odk_db_hostname }}/{{ odk_db_database }}
 TEMP_BACKUP_LOCATION=/tmp/odk_backup
 DATE=$(date +%Y%m%d)
 DIR="${BASH_SOURCE%/*}"
@@ -25,7 +25,7 @@ if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 cd "${DIR}" || exit 1
 
 if [ -z "$slack_channel" ]; then
-  slack_channel="infrastrucure"
+  slack_channel="infrastructure"
 fi
 slack_webhook="{{ odk_slack_webhook }}"
 # run with "Message title" "Message body" "Message status" parameters, where

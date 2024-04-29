@@ -21,11 +21,11 @@ spec:
       containers:
         - env:
             - name: POSTGRES_HOSTNAME
-              value: "{{ ckan_rds_info.instances[0].endpoint.address }}"
+              value: "{{ ckan_db_hostname }}"
             - name: POSTGRES_USER
               value: "{{ rds_admin_username }}"
             - name: POSTGRES_PASSWORD
-              value: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
+              value: "{{ ckan_postgres_password }}"
           name: ckan-db-init
           image: postgres:13
           command: ['bash', '-c']

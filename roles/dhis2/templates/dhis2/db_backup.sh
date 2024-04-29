@@ -25,7 +25,7 @@ if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 cd "${DIR}" || exit 1
 
 if [ -z "$slack_channel" ]; then
-  slack_channel="infrastrucure"
+  slack_channel="infrastructure"
 fi
 slack_webhook="{{ dhis2_slack_webhook }}"
 # run with "Message title" "Message body" "Message status" parameters, where

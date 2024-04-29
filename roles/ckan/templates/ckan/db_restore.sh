@@ -24,7 +24,7 @@ if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 cd "${DIR}" || exit 1
 
 if [ -z "$slack_channel" ]; then
-  slack_channel="infrastrucure"
+  slack_channel="infrastructure"
 fi
 slack_webhook="{{ ckan_slack_webhook }}"
 
