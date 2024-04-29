@@ -25,7 +25,9 @@ resource_prefix: "{{application_name}}-{{resource_group_environment}}"
 resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
 node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
-acr_name: "{{application_name}}{{resource_group_environment}}acr"
+acr_name: "{{application_name|lower}}{{resource_group_environment}}acr"
+vault_name: "{{application_name|lower}}{{resource_group_environment}}vault"
+storage_account_name: "{{application_name|lower}}{{resource_group_environment|lower}}sta"
 
 # Names for the private link services between K8S and Front Door
 ckan_pls_name: ckan-pls
