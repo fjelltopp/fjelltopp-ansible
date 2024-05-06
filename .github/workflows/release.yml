@@ -12,11 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       # Bump version on merging Pull Requests with specific labels.
       # (bump:major,bump:minor,bump:patch)
       - id: bumpr
         uses: haya14busa/action-bumpr@v1
+        with:
+          default_bump_level: patch
+          
       - name: Tag on GH
         uses: ncipollo/release-action@v1.14.0
         with:
