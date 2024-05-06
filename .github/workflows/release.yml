@@ -16,7 +16,6 @@ jobs:
       # (bump:major,bump:minor,bump:patch)
       - id: bumpr
         uses: haya14busa/action-bumpr@v1
-
       - name: Tag on GH
         uses: ncipollo/release-action@v1.14.0
         with:
