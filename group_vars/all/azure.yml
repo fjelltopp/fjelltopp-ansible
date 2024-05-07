@@ -1,0 +1,41 @@
+k8s_version: "1.29.0" #  ['1.29.0', '1.28.5', '1.28.3', '1.27.9', '1.27.7', '1.26.12', '1.26.10']. AWS is on 1.24
+azure_region: "westeurope" # ['westeurope', 'northeurope']
+
+# Mostly just copy the RDS values from all
+vpc_cidr_block: "{{ eks_vpc_cidr_block }}"
+vpc_cidr_subnet1: "{{ eks_vpc_cidr_subnet1 }}"
+vpc_cidr_subnet2: "{{ eks_vpc_cidr_subnet2 }}"
+vpc_cidr_subnet3: "{{ eks_vpc_cidr_subnet3 }}"
+
+db_vpc_cidr_block: "172.18.0.0/16"
+db_vpc_cidr_subnet: "172.18.0.0/18"
+
+worker_nodes_min: "{{ eks_worker_nodes_min }}"
+worker_nodes_max: "{{ eks_worker_nodes_max }}"
+worker_nodes_desired: 1
+worker_instance_type: "standard_a2_v2"
+
+# Values used for naming resources and groups to fit in the Azure deploys
+application_name: "FjelltoppCKAN" # 2-15 Characters. No hyphens or underscores
+resource_group_environment: "D" # Development, Valid values for WHO are U, D, T, P. Used for naming resources and groups
+resource_group_region: EUW # EUW, EUN as appropriate
+
+# Generated names from the vars above
+resource_prefix: "{{application_name}}-{{resource_group_environment}}"
+resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
+node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
+
+acr_name: "{{application_name|lower}}{{resource_group_environment}}acr"
+vault_name: "{{application_name|lower}}{{resource_group_environment}}vault"
+storage_account_name: "{{application_name|lower}}{{resource_group_environment|lower}}sta"
+
+# Names for the private link services between K8S and Front Door
+ckan_pls_name: ckan-pls
+giftless_pls_name: giftless-pls
+
+ckan_superuser_name: "superuser"  
+ckan_superuser_email: "super@example.com"
+
+# This is an azure object ID that will have access to the KeyVault. It should be the object ID of the service principal that is used to run the ansible scripts
+vault_object_id: 000000-0000-000-0000
+

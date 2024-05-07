@@ -1,0 +1,119 @@
+#AWS
+aws_region: "eu-west-1"
+# Current EKS Kubernetes version
+# https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+k8s_version: "1.24"
+# Current Minikube Kubernetes version - should be in sync with EKS
+# minikube versions https://github.com/kubernetes/minikube/releases
+minikube_version: "1.25.2"
+minikube_kubernetes_version: "1.24.0"
+kubeconfig: "{{ ansible_env.HOME}}/.kube/config"
+
+# EKS
+eks_cluster_name: ckan
+# https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
+eks_worker_ami_id: "ami-0209251d863e91768"
+eks_stack_name: "fjelltopp-eks"
+eks_vpc_cidr_block: "172.17.0.0/16"
+eks_vpc_cidr_subnet1: "172.17.0.0/18"
+eks_vpc_cidr_subnet2: "172.17.64.0/18"
+eks_vpc_cidr_subnet3: "172.17.128.0/18"
+eks_worker_nodes_min: 1
+eks_worker_nodes_max: 3
+eks_worker_nodes_desired: 1
+eks_worker_instance_type: "t3.medium"
+
+# Jenkins related
+jenkins_aws_account_id: "791438942407"
+
+# Environment type - local is for Minikube, aws for AWS :)
+# by default it's local
+fjelltopp_env_type: "local"
+
+# Helm role
+# https://github.com/helm/helm/releases/
+helm_version: 'v3.10.3'
+helm_platform: linux
+helm_arch: amd64
+
+# SOLR
+# Based on https://hub.docker.com/_/solr/
+solr_image: "ckan/ckan-solr-dev"
+solr_image_tag: "2.9-py2"
+
+# Base image version to use with e.g. cron jobs
+fjelltopp_base_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ubuntu"
+
+#CKAN
+ckan_pod_replicas_nr: 1
+projectname: "ckan"
+ckan_fqdn: "ckan.minikube"
+ckan_site_url: "http://{{ ckan_fqdn }}"
+ckan_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ckan"
+ckan_image_tag: "2.9.8"
+ckan_db_image: "ckan/postgresql"
+
+# ckan_ds_ro_pass: "123456789"
+# ckan_ds_rw_pass: "123456789"
+# ckan_postgres_password: "12345678"
+# in `pipenv shell` execute:
+# ```python -c 'import secrets; print(secrets.token_urlsafe(20)[:25])'```
+# ckan_beaker_secret: "IYe9lQOkeogHJrB8PWU17fK4_"
+# ckan_api_secret: "cuu4ohph2PohDei3ae2xahJ3pohwoofonoar7eim9deem7au2ge1ieKej5Mai0Ea"
+ckan_datapusher_url: "http://datapusher:8800"
+ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@db/datastore"
+ckan_datastore_write_url: "postgresql://ckan:{{ ckan_postgres_password }}@db/datastore"
+ckan_max_upload_size_mb: "256"
+ckan_redis_url: "redis://redis:6379/1"
+
+
+ckan_solr_url: "http://solr:8983/solr/ckan"
+# ckan_sqlalchemy_url: "postgresql://ckan:12345678@db/ckan"
+ckan_plugins: "stats text_view image_view recline_view blob_storage authz_service"
+
+# CKAN Front-End Settings
+ckan_site_title: "Document Management System"
+ckan_site_logo: "/images/logo.png"
+ckan_site_description: "Department of HIV & AIDS, Ministry of Health, Malawi"
+ckan_favicon: "/images/favicon.ico"
+ckan_gravatar_default: "identicon"
+ckan_preview_direct: "png jpg gif"
+ckan_preview_loadable: "html htm rdf+xml owl+xml xml n3 n-triples turtle plain atom csv tsv rss txt json"
+ckan_display_timezone: "server"
+
+# CKAN localization settings
+ckan_locale: |-
+    ckan.locale_default = en
+    ckan.locale_order = en pt_BR ja it cs_CZ ca es fr el sv sr sr@latin no sk fi ru de pl nl bg ko_KR hu sa sl lv
+    ckan.locales_offered =
+    ckan.locales_filtered_out = en_GB
+
+# CKAN SMTP settings
+ckan_activity_streams_email_notifications: false
+ckan_activity_streams_enabled: false
+ckan_activity_list_limit: "31"
+ckan_email_notifications_since: "2 days"
+ckan_hide_activity_from_users: "%(ckan.site_id)s"
+ckan_error_email_to: "support@fjelltopp.org"
+ckan_error_email_from: "ckan-errors@fjelltopp.org"
+ckan_smtp_server: "localhost"
+ckan_smtp_starttls: "False"
+ckan_smtp_user: ""
+ckan_smtp_password: ""
+ckan_smtp_reply_to: "noreply@example.com"
+ckan_smtp_mail_from: "support@fjelltopp.org"
+
+
+#GIFTLESS
+use_giftless: false
+giftless_url: "http://{{ ckan_fqdn }}/giftless"
+giftless_image: "ghcr.io/fjelltopp/fjelltopp-base-images/giftless"
+giftless_version: "v0.4.0-fjelltopp"
+
+# who.ini
+
+who_authenticators: |-
+  [authenticators]
+  plugins =
+      auth_tkt
+      ckan.lib.authenticator:UsernamePasswordAuthenticator
