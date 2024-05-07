@@ -58,23 +58,6 @@
 
 # TODO: Remove public control plane network with CLI
 
-- name: Get Service Principal for AKS
-  command: >
-      az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
-  register: sp_output_raw
-
-- set_fact:
-    aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
-
-- name: Show SP
-  debug: "msg={{ aks_sp }}"
-
-- name: Allow AKS SP to create network elements
-  azure_rm_roleassignment:
-    assignee_object_id: "{{ aks_sp }}"
-    role_definition_id: "/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7" # Network Contributor (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/networking#network-contributor)
-    scope: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.Network/virtualNetworks/{{resource_prefix}}-v-net"
-
 - name: Create a storage account for the data lake
   azure_rm_storageaccount:
     resource_group: "{{ resource_group_name }}"
@@ -182,3 +165,19 @@
     subnet:
       id: "{{subnet_output.state.id}}"
  
+ - name: Get Service Principal for AKS
+  command: >
+      az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
+  register: sp_output_raw
+
+- set_fact:
+    aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
+
+- name: Show SP
+  debug: "msg={{ aks_sp }}"
+
+- name: Allow AKS SP to create network elements
+  azure_rm_roleassignment:
+    assignee_object_id: "{{ aks_sp }}"
+    role_definition_id: "/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7" # Network Contributor (https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/networking#network-contributor)
+    scope: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ resource_group_name }}/providers/Microsoft.Network/virtualNetworks/{{resource_prefix}}-v-net"

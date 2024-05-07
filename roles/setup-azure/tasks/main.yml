@@ -21,7 +21,6 @@
 - name: Create key vault
   azure_rm_keyvault:
     resource_group: "{{ resource_group_name }}"
-    # vault_name: "{{resource_prefix}}-keyvault"
     vault_name: "{{ vault_name }}"
     vault_tenant: "{{ subscription_output.subscriptions[0].tenant_id }}"
     sku:
