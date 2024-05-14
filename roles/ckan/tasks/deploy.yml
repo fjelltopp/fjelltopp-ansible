@@ -81,7 +81,7 @@
     login_host: "{{ ckan_fqdn }}"
     login_user: "{{ rds_admin_username }}"
     login_password: "{{ ckan_postgres_password }}"
-  when: fjelltopp_env_type == 'local'
+  when: (fjelltopp_env_type == 'local') and (ckan_datapusher_enable)
   register: db_ping_result
   retries: 10
   delay: 5
@@ -106,6 +106,7 @@
   become: false
   with_items:
     - ckandb_job.yaml
+  when: fjelltopp_env_type != 'local'
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
