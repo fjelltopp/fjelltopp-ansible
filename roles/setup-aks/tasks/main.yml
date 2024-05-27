@@ -1,4 +1,3 @@
----
 - name: Get tenant_id for later
   azure.azcollection.azure_rm_subscription_info:
     all: true
