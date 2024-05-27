@@ -33,7 +33,6 @@
         - service: "Microsoft.Storage"
           locations:
             - "{{ azure_region }}"
-
   register: subnet_output
 
 - name: AKS Cluster
@@ -170,9 +169,9 @@
       id: "{{subnet_output.state.id}}"
  
  - name: Get Service Principal for AKS
-  command: >
+    command: >
       az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
-  register: sp_output_raw
+    register: sp_output_raw
 
 - set_fact:
     aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
