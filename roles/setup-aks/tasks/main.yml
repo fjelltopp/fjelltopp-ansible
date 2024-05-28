@@ -114,6 +114,17 @@
 # - name: Show ACR output
 #   debug: "msg={{ acr_output }}"
 
+- name: Get Service Principal for AKS
+  command: >
+    az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
+  register: sp_output_raw
+
+- set_fact:
+    aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
+
+- name: Show SP
+  debug: "msg={{ aks_sp }}"
+
 - name: Update key vault to give AKS access
   azure_rm_keyvault:
     resource_group: "{{ resource_group_name }}"
@@ -168,17 +179,6 @@
     subnet:
       id: "{{subnet_output.state.id}}"
  
-- name: Get Service Principal for AKS
-  command: >
-    az aks show --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks --query "identity"  
-  register: sp_output_raw
-
-- set_fact:
-    aks_sp: "{{ (sp_output_raw.stdout|from_json).principalId }}"
-
-- name: Show SP
-  debug: "msg={{ aks_sp }}"
-
 # - name: Allow AKS SP to create network elements
 #   azure_rm_roleassignment:
 #     assignee_object_id: "{{ aks_sp }}"
