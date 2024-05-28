@@ -23,7 +23,7 @@ resource_group_region: EUW # EUW, EUN as appropriate
 # Generated names from the vars above
 resource_prefix: "{{application_name}}-{{resource_group_environment}}"
 resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
-node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG_MC"
+node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
 acr_name: "{{application_name|lower}}{{resource_group_environment}}acr"
 vault_name: "{{application_name|lower}}{{resource_group_environment}}vault"
