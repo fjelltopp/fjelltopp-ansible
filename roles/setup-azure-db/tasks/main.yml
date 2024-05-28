@@ -84,4 +84,4 @@
           --zone-name {{ db_server_name }}.private.postgres.database.azure.com
   failed_when:
     - result.rc !== 0
-    - '"exists already" not in result.stdout'
+    - '"exists already" not in result.stderr'
