@@ -105,13 +105,14 @@
     - ckan-storage
     - ckan-webassets
 
-- name: Grant AKS access to ACR
-  command: |
-    az aks update -g {{ resource_group_name }} -n {{resource_prefix}}-aks --attach-acr {{acr_name}}
-  register: acr_output
+# Can't do this as contributor!
+# - name: Grant AKS access to ACR
+#   command: |
+#     az aks update -g {{ resource_group_name }} -n {{resource_prefix}}-aks --attach-acr {{acr_name}}
+#   register: acr_output
 
-- name: Show ACR output
-  debug: "msg={{ acr_output }}"
+# - name: Show ACR output
+#   debug: "msg={{ acr_output }}"
 
 - name: Update key vault to give AKS access
   azure_rm_keyvault:
