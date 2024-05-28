@@ -82,4 +82,6 @@
           --resource-group {{ resource_group_name }} \
           --virtual-network {{resource_prefix}}-v-net \
           --zone-name {{ db_server_name }}.private.postgres.database.azure.com
-                                      
+  failed_when:
+    - result.rc == 0
+    - '"exists already" not in result.stdout'
