@@ -7,7 +7,7 @@
   register: ckan_pod_raw
 
 - set_fact:
-    ckan_pod: "{{ (ckan_pod_raw.stdout_lines[0] | split('/'))[1] }}"
+    ckan_pod: "{{ (ckan_pod_raw.stdout_lines[1] | split('/'))[1] }}"
 
 # Use some shell stuff to pipe the password into the interactive prompt
 - name: Create CKAN Superuser
