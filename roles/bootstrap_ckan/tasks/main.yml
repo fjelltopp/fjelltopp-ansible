@@ -1,13 +1,13 @@
 - name: Get CKAN Pod
   shell: >
     az aks command invoke \
-    --resource-group {{ resource_group_name }} 
+    --resource-group {{ resource_group_name }} \
     --name {{resource_prefix}}-aks \
-    --command "kubectl get pods -n {{ application_namespace }} -l app=ckan --field-selector=status.phase=Running -o=name" | grep pod | cut -d "/" -f 2
+    --command "kubectl get pods -n {{ application_namespace }} -l app=ckan --field-selector=status.phase=Running -o=name"
   register: ckan_pod_raw
 
 - set_fact:
-    ckan_pod: "{{ ckan_pod_raw.stdout_lines[0] }}"
+    ckan_pod: "{{ (ckan_pod_raw.stdout_lines | split('/'))[1] }}"
 
 # Use some shell stuff to pipe the password into the interactive prompt
 - name: Create CKAN Superuser
