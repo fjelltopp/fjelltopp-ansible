@@ -1,0 +1,6 @@
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: setup-azure, tags: ["all"] } # Get the vars we need for the rest of the setup
+    - { role: bootstrap_ckan, tags: ["all"] }
