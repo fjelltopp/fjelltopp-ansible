@@ -9,7 +9,7 @@ spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: managed-csi
   csi:
@@ -28,7 +28,7 @@ spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: managed-csi
   csi:
@@ -47,7 +47,7 @@ spec:
   capacity:
     storage: 1Gi
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: managed-csi
   csi:
@@ -64,7 +64,7 @@ metadata:
 spec:
   storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1000Mi
@@ -76,7 +76,7 @@ metadata:
 spec:
   storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1000Mi
@@ -91,7 +91,7 @@ metadata:
 spec:
   storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 100Mi
