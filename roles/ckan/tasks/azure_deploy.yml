@@ -49,7 +49,7 @@
 
 - set_fact:
     ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
-    disk_prefix: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}/providers/Microsoft.Compute/disks/{{resource_prefix}}-aks-disk-"
+    disk_prefix: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}/providers/Microsoft.Compute/disks/"{{resource_prefix}}-aks-disk-"
 
 - name: Get Storage connection string
   azure.azcollection.azure_rm_storageaccount_info:
