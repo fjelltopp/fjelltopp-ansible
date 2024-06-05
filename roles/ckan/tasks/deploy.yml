@@ -81,12 +81,14 @@
     login_host: "{{ ckan_fqdn }}"
     login_user: "{{ rds_admin_username }}"
     login_password: "{{ ckan_postgres_password }}"
-  when: (fjelltopp_env_type == 'local') and (ckan_datapusher_enable)
+  when: (fjelltopp_env_type == 'local') and (ckan_datapusher_enable == 'true')
   register: db_ping_result
   retries: 10
   delay: 5
   until: db_ping_result.is_available
   failed_when: not db_ping_result.is_available
+  # In case this job fails cause there is no object db_ping_result.is_available, check if you
+  # are on proper virtualenv or install psycopg2 python package
 
 - name: Setup database parameters
   set_fact:
@@ -106,7 +108,7 @@
   become: false
   with_items:
     - ckandb_job.yaml
-  when: fjelltopp_env_type != 'local'
+  # when: fjelltopp_env_type != 'local'
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
