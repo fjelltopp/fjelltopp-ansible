@@ -189,6 +189,7 @@ spec:
             - containerPort: 5000
               protocol: TCP
           resources: {}
+{% if fjelltopp_cloud_provider != 'azure' %}          
           volumeMounts:
             - mountPath: /var/lib/ckan/storage
               name: ckan-storage
@@ -199,6 +200,21 @@ spec:
             - name: ckan-configs
               mountPath: /etc/ckan
               readOnly: true
+{% endif %}
+
+{% if fjelltopp_cloud_provider == 'azure' %}
+          volumeDevices:
+            - devicePath: /var/lib/ckan/storage
+              name: ckan-storage
+            - devicePath: /var/lib/ckan/webassets
+              name: ckan-webassets
+            - devicePath: /var/lib/ckan/resources
+              name: ckan-resources
+          volumeMounts:
+            - name: ckan-configs
+              mountPath: /etc/ckan
+              readOnly: true
+{% endif %}
 
 {% if fjelltopp_env_type == 'local' %}
             - mountPath: /usr/lib/ckan
