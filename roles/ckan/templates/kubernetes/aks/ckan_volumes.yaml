@@ -1,98 +1,84 @@
 ---
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+apiVersion: v1
+kind: PersistentVolume
 metadata:
-  name: managed-csi-1
-provisioner: disk.csi.azure.com
-parameters:
-  skuname: Premium_LRS  # Currently shared disk only available with premium SSD
-  maxShares: "2"
-  cachingMode: None  # ReadOnly cache is not available for premium SSD with maxShares>1
-reclaimPolicy: Retain
-# ---
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   annotations:
-#     pv.kubernetes.io/provisioned-by: disk.csi.azure.com
-#   name: ckan-storage
-# spec:
-#   capacity:
-#     storage: 1Gi
-#   accessModes:
-#     - ReadWriteMany
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: managed-csi
-#   csi:
-#     driver: disk.csi.azure.com
-#     volumeHandle: "{{ disk_prefix }}ckan-storage"
-#     volumeAttributes:
-#       fsType: ext4
-# ---
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   annotations:
-#     pv.kubernetes.io/provisioned-by: disk.csi.azure.com
-#   name: ckan-webassets
-# spec:
-#   capacity:
-#     storage: 1Gi
-#   accessModes:
-#     - ReadWriteMany
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: managed-csi
-#   csi:
-#     driver: disk.csi.azure.com
-#     volumeHandle: "{{ disk_prefix }}ckan-webassets"
-#     volumeAttributes:
-#       fsType: ext4
-# ---
-# apiVersion: v1
-# kind: PersistentVolume
-# metadata:
-#   annotations:
-#     pv.kubernetes.io/provisioned-by: disk.csi.azure.com
-#   name: ckan-resources
-# spec:
-#   capacity:
-#     storage: 1Gi
-#   accessModes:
-#     - ReadWriteMany
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: managed-csi
-#   csi:
-#     driver: disk.csi.azure.com
-#     volumeHandle: "{{ disk_prefix }}ckan-resources"
-#     volumeAttributes:
-#       fsType: ext4            
-
+  annotations:
+    pv.kubernetes.io/provisioned-by: disk.csi.azure.com
+  name: ckan-storage
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: managed-csi
+  csi:
+    driver: disk.csi.azure.com
+    volumeHandle: "{{ disk_prefix }}ckan-storage"
+    volumeAttributes:
+      fsType: ext4
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: disk.csi.azure.com
+  name: ckan-webassets
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: managed-csi
+  csi:
+    driver: disk.csi.azure.com
+    volumeHandle: "{{ disk_prefix }}ckan-webassets"
+    volumeAttributes:
+      fsType: ext4
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    pv.kubernetes.io/provisioned-by: disk.csi.azure.com
+  name: ckan-resources
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: managed-csi
+  csi:
+    driver: disk.csi.azure.com
+    volumeHandle: "{{ disk_prefix }}ckan-resources"
+    volumeAttributes:
+      fsType: ext4            
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: ckan-storage
 spec:
-  storageClassName: managed-csi-1
-  volumeMode: Block
+  storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 256Gi
+      storage: 1000Mi
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: ckan-webassets
 spec:
-  storageClassName: managed-csi-1
-  volumeMode: Block
+  storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 256Gi
+      storage: 1000Mi
 
 ---
 apiVersion: v1
@@ -102,13 +88,55 @@ metadata:
     app: ckan
   name: ckan-resources
 spec:
-  storageClassName: managed-csi-1
-  volumeMode: Block
+  storageClassName: "{{ storage_class_name }}"
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 256Gi
-    
+      storage: 100Mi
 status: {}
 
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ckan
+  name: ckan-resources-blob
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: azureblob-nfs-premium
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ckan
+  name: ckan-webassets-blob
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: azureblob-nfs-premium
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: ckan
+  name: ckan-storage-blob
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: azureblob-nfs-premium
+  resources:
+    requests:
+      storage: 1Gi
