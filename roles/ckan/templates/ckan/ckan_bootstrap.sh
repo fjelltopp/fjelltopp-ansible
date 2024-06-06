@@ -12,6 +12,6 @@ echo "Create API token:"
 psql "${CKAN_SQLALCHEMY_URL}"  -c "INSERT INTO api_token VALUES ('{{ ckan_default_api_token }}', 'Default Token', '{{ ckan_admin_user_id }}', now()) ON CONFLICT DO NOTHING;"
 echo "make admin superuser"
 ckan -c "$CONFIG" sysadmin add admin
+echo "Set datastore permissions"
+ckan -c "$CONFIG" datastore set-permissions | psql "${CKAN_SQLALCHEMY_URL}"
 echo bootstrap finished
-
-
