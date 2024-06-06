@@ -16,6 +16,7 @@ botocore = "*"
 openshift = "*"
 docker = "*"
 awscli = "*"
+psycopg2 = "*"
 
 [requires]
 python_version = "3.8"
