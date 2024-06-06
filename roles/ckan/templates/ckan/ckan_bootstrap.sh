@@ -9,7 +9,7 @@ ckan -c "$CONFIG" user add admin email="admin@localhost" name="admin" fullname="
 echo "Set apikey:"
 psql "${CKAN_SQLALCHEMY_URL}"  -c "UPDATE public.user SET apikey = '{{ ckan_admin_api_key }}' WHERE name = 'admin';"
 echo "Create API token:"
-psql "${CKAN_SQLALCHEMY_URL}"  -c "INSERT INTO api_token VALUES ('{{ ckan_default_api_token }}', 'Default Token', '{{ ckan_admin_user_id }}', now()) ON CONFLICT DO NOTHING;"
+psql "${CKAN_SQLALCHEMY_URL}"  -c "INSERT INTO api_token VALUES ('{{ ckan_admin_api_token_unencoded }}', 'Default Token', '{{ ckan_admin_user_id }}', now()) ON CONFLICT DO NOTHING;"
 echo "make admin superuser"
 ckan -c "$CONFIG" sysadmin add admin
 echo "Set datastore permissions"
