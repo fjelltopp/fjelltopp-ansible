@@ -94,25 +94,6 @@
 #         - id: "{{ subnet_output.state.id }}"
 #           action: Allow
 
-- name: Create Disks for the AKS permanent storage
-  azure_rm_manageddisk:
-    resource_group: "{{ node_group_name }}"
-    name: "{{resource_prefix}}-aks-disk-{{ item }}"
-    disk_size_gb: 1
-    storage_account_type: Standard_LRS
-  with_items:
-    - ckan-resources
-    - ckan-storage
-    - ckan-webassets
-
-# Can't do this as contributor!
-# - name: Grant AKS access to ACR
-#   command: |
-#     az aks update -g {{ resource_group_name }} -n {{resource_prefix}}-aks --attach-acr {{acr_name}}
-#   register: acr_output
-
-# - name: Show ACR output
-#   debug: "msg={{ acr_output }}"
 
 - name: Get Service Principal for AKS
   command: >
@@ -179,6 +160,8 @@
     subnet:
       id: "{{subnet_output.state.id}}"
  
+
+# We do this manually if we need to
 # - name: Allow AKS SP to create network elements
 #   azure_rm_roleassignment:
 #     assignee_object_id: "{{ aks_sp }}"
