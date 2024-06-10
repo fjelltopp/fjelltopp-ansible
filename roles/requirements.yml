@@ -19,3 +19,6 @@ collections:
 - name: community.crypto
   accept_hostkey: true
   version: 2.10.0
+- name: community.postgresql
+  accept_hostkey: true
+  version: 3.4.0

@@ -2,9 +2,9 @@
   "default": {
     "database": {
       "host": "{{ odk_db_hostname }}",
-      "user": "odk",
+      "user": "{{ odk_db_user }}",
       "password": "{{ odk_postgres_password }}",
-      "database": "odk"
+      "database": "{{ odk_db_database }}"
     },
     "email": {
       "serviceAccount": "{{ odk_support_email }}",

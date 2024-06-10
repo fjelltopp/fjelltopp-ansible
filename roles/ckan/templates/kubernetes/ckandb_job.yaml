@@ -21,7 +21,7 @@ spec:
       containers:
         - env:
             - name: POSTGRES_HOSTNAME
-              value: "{{ ckan_rds_info.instances[0].endpoint.address }}"
+              value: "{{ ckan_db_hostname }}"
             - name: POSTGRES_USER
               value: "{{ rds_admin_username }}"
             

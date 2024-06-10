@@ -1,8 +1,8 @@
 /* based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore */
 CREATE EXTENSION POSTGIS;
-CREATE ROLE ckan NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ lookup('aws_secret', application_namespace + '_ckan_dbuser_password' , region = aws_region ) }}';
-CREATE ROLE datastore_ro NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ lookup('aws_secret', application_namespace + '_datastore_ro_dbuser_password' , region = aws_region ) }}';
-CREATE ROLE datastore NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ lookup('aws_secret', application_namespace + '_datastore_dbuser_password' , region = aws_region ) }}';
+CREATE ROLE ckan NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_postgres_password }}';
+CREATE ROLE datastore_ro NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_ro_pass }}';
+CREATE ROLE datastore NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_rw_pass }}';
 GRANT ckan to {{ rds_admin_username }};
 GRANT datastore to {{ rds_admin_username }};
 GRANT datastore to ckan;

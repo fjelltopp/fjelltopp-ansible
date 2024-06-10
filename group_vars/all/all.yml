@@ -51,7 +51,7 @@ ckan_fqdn: "ckan.minikube"
 ckan_site_url: "http://{{ ckan_fqdn }}"
 ckan_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ckan"
 ckan_image_tag: "2.9.8"
-ckan_db_image: "ckan/postgresql"
+ckan_db_image: "postgres"
 
 # ckan_ds_ro_pass: "123456789"
 # ckan_ds_rw_pass: "123456789"
@@ -60,6 +60,7 @@ ckan_db_image: "ckan/postgresql"
 # ```python -c 'import secrets; print(secrets.token_urlsafe(20)[:25])'```
 # ckan_beaker_secret: "IYe9lQOkeogHJrB8PWU17fK4_"
 # ckan_api_secret: "cuu4ohph2PohDei3ae2xahJ3pohwoofonoar7eim9deem7au2ge1ieKej5Mai0Ea"
+ckan_datapusher_enable: false
 ckan_datapusher_url: "http://datapusher:8800"
 ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@db/datastore"
 ckan_datastore_write_url: "postgresql://ckan:{{ ckan_postgres_password }}@db/datastore"
@@ -109,80 +110,6 @@ use_giftless: false
 giftless_url: "http://{{ ckan_fqdn }}/giftless"
 giftless_image: "ghcr.io/fjelltopp/fjelltopp-base-images/giftless"
 giftless_version: "v0.4.0-fjelltopp"
-
-# JWT keys can be generated with the help of openssh and openssl:
-# ssh-keygen -t rsa -b 4096 -m PEM -f jwtRS256.key
-#  Don't add passphrase
-# openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
-# cat jwtRS256.key
-# cat jwtRS256.key.pub
-# ckan_jwt_private_key: |-
-#   -----BEGIN RSA PRIVATE KEY-----
-#   MIIJKQIBAAKCAgEA2yd99nL3uOyQdTat1wu2+Om/cFDbAA+N27JzqmmdS4SoWJRv
-#   8DcwYVUfPKdzseIrgXBWz9yd3w7dx8nGoi5OJElUI+fBrSioJ0P3oRHE64Ya6MYA
-#   8ZA2LAU5Pm52MUuuCwtayPA2XrhdZbucCGz0VDbmGA6rSBFmykmPRVP2Dc+4+Bk2
-#   k2Ja3cH/O+0g4Jbj6SxLWVt0a/LeZBY1ejaBtwkmFgqCkS+Ege4bpwS+a3V/0cUQ
-#   NAvN0kqMvHPLfnT+/hHTt2e5NsO1N/Mw3xs0WdoWGp/3OBdTBMtLrFqqGvInYY0C
-#   acszrP3iC3r60jfN05WNh3+tX3Skn5SKSk5NhEfyE9QKZx84UMt/yJ4VpAMuHaZi
-#   lnyUWOtrOrji4blYcBpUvhLHrxXKPh/Uz5hfWTdI00Wo3r8kQvsvAoslkpaLjc8S
-#   CgCWarK0CxLe1O0lLgUWUBtQ4p4XdRd4Lyc4lEjxiQy2FUUR4Oh65YTX3IUibnqr
-#   27CZKp7r0wNeRva4lE8RCXOvpvemLAz+/6AnH4le4nLRk9WK2ZEa8dSnN3ptstYg
-#   HuzoE70LRFZR/wiafIB1ggdjciSrLwXtEkPsjmQ3nrn6lqvYdQ9CQ1rKuoQnsNHC
-#   W49H0+uh1ZfU8yO+H529MrrJWsxcrD4JPODkVgTR7PGPMf+oE/52t4MQzokCAwEA
-#   AQKCAgA9GeWksKkghdRA2d3d9wYsn/8f8WsduThz6G0XNhsE0xecmsYa00hJ2tG6
-#   t3UqQ0Sd8hRCH+BkMGDlMvyOexqOQ2OSHyuAe7VmPSztW2brw5f9Djd1Ih/4Zfxv
-#   y5xoYhFEQwYsv8xo3D4t/wCh2L7GPAgq7OwUS8W84IVxbtdLQn7vrRfqP6HV8iCX
-#   NKXV+DvS5uabI0RyVGRsw0Rlroy723Ei9AszL2xiTWCoUEpG65uXgLnjyOa5ms9i
-#   O2ag+z2c2JuOpvycqDP+RW96xLrz0joXckIbAWXEEGoow55ppNoV+JqTpHPj52T+
-#   jmsf8S8RrsCm5pIP6xV66I8l6G7zzl7XyYpLkCjOfgPGX+1J8g6pvKWIkrXd49yN
-#   NKI71cqaftawocFfBWkFcQ68CYpGV2wcXurXfdHrJ37VNCy1dQKuZ8VDdlLSCPug
-#   oPQym9ObIpoAVG08rTT7pZccWTa2e1cifcI/uxLpxt9jrstD+eZEEMrp0KMLqM2j
-#   sqLmSqEFBPpmzCTBWXmPYHu7X2TORFOEG1OA5Y0bR6+C1129lEHPGRQW7n6wO58b
-#   hwdumx6ZIxo762SPjZZ6aRyMhxVGggdP55+N/NnWCWFTD7jlJ11XwIA/bnUPD9Ki
-#   TQn4cxS0e1+wN9yqKS+HYk77VBZvmcnPBpjzrbJ+Sm24VYHWAQKCAQEA+LwvPkEa
-#   sCFqaqu1uiKHgdUKbCN3nAxeosHCBlAORGXnbESd86dWrQMxvlid7/f2dy13DTks
-#   CpjMPzT8GFEXPLUVH7GRVdnK0hnHE0KbiJqnxsb0PUEDklZvVDVtalW7TJShwAgg
-#   FOl7FfDoIArcppQrg8PnFmj/M11s7w5x+I+rfKZlcqxdNBDlQlwqvBZCh0I/Yb2Z
-#   efkRk/fyobnzlgk3ItnvJQFOK0VDXXsma1a0wdXnKCOU9J6KBiTORGtPyPUMeZd8
-#   W5FT22UyQxDYB47aG5MIJnuZaJzIHXHG2IkAcsmi1reBbYIWZzx27zkUgZjqKiwb
-#   K428vqsUTyebTQKCAQEA4Y4g/jgwtvx3iyoXxS/yXu37Tqf1SlxBqDxJYagdi0Yl
-#   BFniW2ZGYX3RSItBAm5WLFiBRyFfpEXYkFkeZHTZ7QCRMna7FSDvSqq4KlvWiMTv
-#   SpE5JLWEHIsZHgKeFy7YSNZu2kmQzF2uijp8hcSqnPSCwOVXTHIgfnrx9NX7zvto
-#   g4R6qlJ0YXgCulce70WTWmi8afdWXSqm+A3HD4AGqpDSTQJDeLD9PisA4tRNJV+9
-#   235xGRP/dI9yV8hpKLn+Kvt7oB1O0bzHCrzWHy4o3zIunaNyI3eHG+DujCYfVVW+
-#   jNq9vVUSOi2+Y0OdjP4lfQnP4xJ4BjrmwoqXDW+KLQKCAQEAt43P40YSFsYiDOP4
-#   MIsIqrP3hAPMYZjzQXJw502uqaT12fzs/wCPQw/nZotoycyX0iz3/QcizBMkLsTA
-#   AIXe+wq6su/Ly6n0NYWWVk1CD9XpWBQ76vQOWbB1aZQf0WfA12ubzeVxH12JWpC0
-#   C+lYGYmgbxVjdDM5mMMp/2QOkRoct9jnZm9yPFj3hjgTxUc8AyrNMSjEmLFH2oUQ
-#   RW6/JgpY6Nwg0ZMcB2yOoO6fVHjg3WYntoRDiR1xx8TjfrQeZbMIaLZ0q/IcCvyr
-#   0bgdY750kAK58gQmGoAQYUI0Nlkrvom0JHW5CoIEXFzPfAwIaPbaXxK7XjGzhpUj
-#   YKJexQKCAQAeNfVBV7FesQ4p+6dXaAakpGeGr4RxQ04gBIMnq2bZormOjaN97oL6
-#   x+liOBSrCLBOHESkjFnNHPXWz7j8Z5JQ5kSMZ87DE7g5Xghw1AA2LXqHmE/5FL7v
-#   O8pPdLZMEKAzkVUjs7rLRLj+FrtbB256u11QDOfWe2rSxhDmZErn/FCRXQs5CPZB
-#   n9ttrgGctsr3zxN9df2BWRcoHmBNOS6rZd5lJip3Xe1tiEEEIL98hAhf/92SKFWM
-#   /TGphFRhehgLFcgHOCW4ffqC+6wKXRpoWsZXou7ExVu5ZjVNXEXSHjv5jcrgMybP
-#   2BSqIwJVQi0vREMt/OlKnFUQNZPp3si5AoIBAQDuuYkNuBvRKrBnoN9hBUBHWvFB
-#   G7ULj2NUZbh9rbve3XpOZ6e351u9+ZsRUUlPrEgKYv52DCxVk+kDwFzPkYEXI51N
-#   lv5Zg7j8s3e1uC/A2PyxH0M6b9NR8X9vEy3mvQRuRlJvnbhtTWvWa9SPTHVkzfez
-#   iNCY6BUxjJqTxxKS4ANiUZZamglmoe+8P8ZCamM7ghm2hndPZHejjCtJ+XC2ZX6m
-#   Pi/Ja550pCQ1FTdeGj2ior+s3HrNfKBBMimTLbfG9l5sJ6q1haXWzI9uTOETUALy
-#   yGhZYRJ+Gb0jiBdSRFGMJHEA1ikcmzTom1OSdVatRwHa6TLVz9K/+rIcJ7VG
-#   -----END RSA PRIVATE KEY-----
-# ckan_jwt_public_key: |-
-#   -----BEGIN PUBLIC KEY-----
-#   MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA2yd99nL3uOyQdTat1wu2
-#   +Om/cFDbAA+N27JzqmmdS4SoWJRv8DcwYVUfPKdzseIrgXBWz9yd3w7dx8nGoi5O
-#   JElUI+fBrSioJ0P3oRHE64Ya6MYA8ZA2LAU5Pm52MUuuCwtayPA2XrhdZbucCGz0
-#   VDbmGA6rSBFmykmPRVP2Dc+4+Bk2k2Ja3cH/O+0g4Jbj6SxLWVt0a/LeZBY1ejaB
-#   twkmFgqCkS+Ege4bpwS+a3V/0cUQNAvN0kqMvHPLfnT+/hHTt2e5NsO1N/Mw3xs0
-#   WdoWGp/3OBdTBMtLrFqqGvInYY0CacszrP3iC3r60jfN05WNh3+tX3Skn5SKSk5N
-#   hEfyE9QKZx84UMt/yJ4VpAMuHaZilnyUWOtrOrji4blYcBpUvhLHrxXKPh/Uz5hf
-#   WTdI00Wo3r8kQvsvAoslkpaLjc8SCgCWarK0CxLe1O0lLgUWUBtQ4p4XdRd4Lyc4
-#   lEjxiQy2FUUR4Oh65YTX3IUibnqr27CZKp7r0wNeRva4lE8RCXOvpvemLAz+/6An
-#   H4le4nLRk9WK2ZEa8dSnN3ptstYgHuzoE70LRFZR/wiafIB1ggdjciSrLwXtEkPs
-#   jmQ3nrn6lqvYdQ9CQ1rKuoQnsNHCW49H0+uh1ZfU8yO+H529MrrJWsxcrD4JPODk
-#   VgTR7PGPMf+oE/52t4MQzokCAwEAAQ==
-#   -----END PUBLIC KEY-----
 
 # who.ini
 

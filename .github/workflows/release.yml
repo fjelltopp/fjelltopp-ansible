@@ -1,0 +1,29 @@
+name: release
+on:
+  push:
+    branches:
+      - master
+    tags-ignore:
+      - "**"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bump version on merging Pull Requests with specific labels.
+      # (bump:major,bump:minor,bump:patch)
+      - id: bumpr
+        uses: haya14busa/action-bumpr@v1
+        with:
+          default_bump_level: patch
+          
+      - name: Tag on GH
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          tag: ${{ steps.bumpr.outputs.next_version }}
+          name: Release ${{ steps.bumpr.outputs.next_version }}
+          generateReleaseNotes: true
+          commit: ${{ vars.GITHUB_SHA }}
+          token: ${{ secrets.GITHUB_TOKEN }}
