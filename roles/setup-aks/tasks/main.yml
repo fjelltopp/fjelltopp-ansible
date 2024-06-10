@@ -59,6 +59,12 @@
         vnet_subnet_id: "{{subnet_output.state.id}}"
   register: aks_output
 
+- name: Enable Blob Driver on AKS
+  command: >
+    az aks update --enable-blob-driver \
+    --name {{resource_prefix}}-aks \
+    --resource-group {{ resource_group_name }} \
+
 # TODO: Remove public control plane network with CLI
 - name: Create a storage account for the data lake
   azure_rm_storageaccount:
