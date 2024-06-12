@@ -71,6 +71,7 @@ azure-mgmt-notificationhubs = "==7.0.0"
 azure-mgmt-eventhub = "==10.1.0"
 uamqp = "*"
 requests = {extras = ["security"], version = "*"}
+psycopg2 = "*"
 
 [requires]
 python_version = "3.11"
