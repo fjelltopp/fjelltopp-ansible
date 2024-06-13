@@ -50,6 +50,8 @@
 - set_fact:
     ckan_sqlalchemy_url: "postgresql://{{ azure_db_admin_username }}:{{ azure_db_admin_password }}@{{ db_fqdn }}/ckan"
     disk_prefix: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourceGroups/{{ node_group_name }}/providers/Microsoft.Compute/disks/{{resource_prefix}}-aks-disk-"
+    ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ db_fqdn }}/datastore"
+    ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ db_fqdn }}/datastore"
 
 - name: Get Storage connection string
   azure.azcollection.azure_rm_storageaccount_info:
