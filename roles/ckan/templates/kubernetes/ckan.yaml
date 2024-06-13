@@ -227,7 +227,7 @@ spec:
         - name: ckan-configs
           secret:
             secretName: ckan-configs
-{% if fjelltopp_cloud_provider != 'azure' %}
+
 ---
 apiVersion: v1
 kind: Service
@@ -243,6 +243,7 @@ spec:
       targetPort: 5000
   selector:
     app: ckan
+{% if fjelltopp_cloud_provider != 'azure' %}
 status:
   loadBalancer: {}
 {% endif %}
