@@ -19,3 +19,4 @@
     - { role: setup-azure-db, tags: ["all", "db", "init"] }
     - { role: setup-azure-frontdoor, tags: ["all", "frontdoor", "post-init"] }
     - { role: setup-azure-security, tags: ["all", "security", "post-init"] }
+    - { role: datadog-k8s-azure, tags: ["datadog"]}
