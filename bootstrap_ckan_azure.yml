@@ -3,5 +3,5 @@
   become: false
   roles:
     - { role: setup-azure, tags: ["all", "ckan", "datapusher"] } # Get the vars we need for the rest of the setup
-    - { role: bootstrap_ckan, tags: ["all", "ckan"] }
+    - { role: bootstrap-ckan, tags: ["all", "ckan"] }
     # - { role: bootstrap_datapusher, tags: ["all", "datapusher"] }

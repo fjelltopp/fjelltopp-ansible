@@ -5,6 +5,7 @@ metadata:
 spec:
   global:
     site: {{ datadog_site }}
+    clusterName: {{ datadog_cluster_name }} # https://github.com/DataDog/helm-charts/blob/896a355268ff6b3cfd33f945ae373912caa8b6e4/charts/datadog/values.yaml#L96
     credentials:
       apiSecret:
         secretName: datadog-secret
