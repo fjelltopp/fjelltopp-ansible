@@ -93,6 +93,7 @@ spec:
           args:
             - cd /usr/lib/ckan/;
               export HOME=/usr/lib/ckan/;
+              pipenv --version;
               pipenv sync --dev;
               ./bootstrap.sh;
               rm -rf venv;
