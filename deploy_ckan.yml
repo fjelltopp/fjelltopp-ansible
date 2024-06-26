@@ -3,5 +3,4 @@
   become: false
   roles:
     - { role: ckan, tags: ["deploy", "all"] }
-
-    unnecessary
+    
