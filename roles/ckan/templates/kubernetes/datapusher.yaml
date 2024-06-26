@@ -18,7 +18,7 @@ spec:
         app: datapusher
     spec:
       containers:
-        - image: afdatahubtacr.azurecr.io/datapusher:1
+        - image: {{ datapusher_image }}
           name: datapusher
           ports:
             - containerPort: 8800
