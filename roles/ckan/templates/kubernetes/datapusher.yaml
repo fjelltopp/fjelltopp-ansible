@@ -18,7 +18,7 @@ spec:
         app: datapusher
     spec:
       containers:
-        - image: clementmouchet/datapusher
+        - image: {{ datapusher_image }}
           name: datapusher
           ports:
             - containerPort: 8800

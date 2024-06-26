@@ -1,0 +1,25 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+spec:
+  global:
+    site: {{ datadog_site }}
+    clusterName: {{ datadog_cluster_name }} # https://github.com/DataDog/helm-charts/blob/896a355268ff6b3cfd33f945ae373912caa8b6e4/charts/datadog/values.yaml#L96
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+    kubelet:
+      tlsVerify: false
+  override:
+    clusterAgent:
+      containers:
+        cluster-agent:
+          env:
+            - name: DD_ADMISSION_CONTROLLER_ADD_AKS_SELECTORS
+              value: "true"
+  features:
+    logCollection:
+      enabled: true
+      containerCollectAll: true

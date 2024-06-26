@@ -1,0 +1,26 @@
+- name: Install Datadog Operator
+  shell: |
+    az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
+    --command "helm repo add datadog https://helm.datadoghq.com && helm repo update && helm install datadog-operator datadog/datadog-operator" \
+
+    az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
+    --command "kubectl create secret generic datadog-secret --from-literal api-key={{ datadog_api_key}}" \
+  when: datadog_api_key is defined
+
+- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  
+  template:
+    src: "{{role_path}}/kubernetes/datadog-agent.yaml"
+    dest: "{{role_path}}/kubernetes/datadog-agent.out.yaml"
+
+# This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
+- name: Deploy Datadog Agent
+  command: >
+    az aks command invoke \
+    --resource-group {{ resource_group_name }} 
+    --name {{resource_prefix}}-aks \
+    --command "kubectl apply -f datadog-agent.out.yaml" \
+    --file "{{role_path}}/kubernetes/datadog-agent.out.yaml"
+
+- name: Clean up templated files
+  command: >
+    rm "{{role_path}}/kubernetes/datadog-agent.out.yaml"

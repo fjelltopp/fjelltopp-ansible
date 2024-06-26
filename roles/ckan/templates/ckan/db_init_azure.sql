@@ -1,0 +1,38 @@
+/* based on https://fjelltopp.atlassian.net/wiki/spaces/ADR/pages/1409032/ADR+Backup+restore */
+CREATE EXTENSION POSTGIS;
+CREATE ROLE ckan NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_postgres_password }}';
+CREATE ROLE datastore_ro NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_ro_pass }}';
+CREATE ROLE datastore NOSUPERUSER NOCREATEDB NOCREATEROLE LOGIN PASSWORD '{{ ckan_ds_rw_pass }}';
+GRANT ckan to {{ azure_db_admin_username }};
+GRANT datastore to {{ azure_db_admin_username }};
+GRANT datastore to ckan;
+ALTER SCHEMA public OWNER to ckan;
+GRANT ALL ON SCHEMA public TO ckan;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ckan;
+CREATE DATABASE ckan OWNER ckan ENCODING 'utf-8';
+ALTER VIEW geography_columns OWNER TO ckan;
+ALTER VIEW geometry_columns OWNER TO ckan;
+ALTER TABLE spatial_ref_sys OWNER TO ckan;
+CREATE DATABASE datastore OWNER ckan ENCODING 'utf-8';
+GRANT ALL PRIVILEGES ON DATABASE ckan to ckan;
+GRANT ALL PRIVILEGES ON DATABASE datastore TO ckan;
+GRANT ALL PRIVILEGES ON DATABASE datastore TO datastore;
+REVOKE ALL ON TABLE public.spatial_ref_sys FROM rdsadmin;
+REVOKE SELECT ON TABLE public.spatial_ref_sys FROM PUBLIC;
+GRANT ALL on TABLE public.spatial_ref_sys TO {{ azure_db_admin_username }};
+GRANT ALL ON TABLE public.spatial_ref_sys TO ckan;
+GRANT SELECT ON TABLE public.spatial_ref_sys TO PUBLIC;
+GRANT SELECT ON TABLE public.spatial_ref_sys TO datastore_ro;
+REVOKE ALL ON TABLE public.geometry_columns FROM rdsadmin;
+REVOKE SELECT ON TABLE public.geometry_columns FROM PUBLIC;
+GRANT ALL ON TABLE public.geometry_columns TO ckan;
+GRANT SELECT ON TABLE public.geometry_columns TO PUBLIC;
+GRANT SELECT ON TABLE public.geometry_columns TO datastore_ro;
+GRANT CONNECT ON DATABASE datastore TO datastore_ro;
+GRANT USAGE ON SCHEMA public TO datastore_ro;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO datastore_ro;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO datastore_ro;
+REVOKE ALL on TABLE public.spatial_ref_sys FROM {{ azure_db_admin_username }};
+REVOKE ckan from {{ azure_db_admin_username }};
+REVOKE datastore from {{ azure_db_admin_username }};
+

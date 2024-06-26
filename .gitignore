@@ -1,2 +1,6 @@
+roles/ckan/templates/kubernetes/aks/out/*
+.venv*
+.idea
+.vscode
 roles/gantsign.minikube
 roles/geerlingguy.helm

@@ -1,0 +1,122 @@
+# TODO: confirm settings for this
+- name: Enable Microsoft Defender
+  azure_rm_deployment:
+    resource_group: "{{ resource_group_name }}"
+    location: "{{ azure_region }}"
+    name: Defender
+    template:
+      $schema: "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#"
+      contentVersion: "1.0.0.0"
+      resources:
+        - type: "Microsoft.Security/defenderForStorageSettings"
+          apiVersion: "2022-12-01-preview"
+          name: "current"
+          scope: "Microsoft.Storage/storageAccounts/{{ storage_account_name }}"
+          properties:
+            isEnabled: true
+            malwareScanning:
+              onUpload:
+                isEnabled: true
+                capGBPerMonth: 5000
+            sensitiveDataDiscovery:
+              isEnabled: true
+            overrideSubscriptionLevelSettings: true
+  when: false
+
+# Firewall
+- name: Create a subnet for Firewall
+  azure_rm_subnet:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network_name: "{{resource_prefix}}-v-net"
+    name: AzureFirewallSubnet
+    private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
+    private_link_service_network_policies: "Disabled"
+  register: subnet_output
+
+- name: Create a subnet for Firewall Management
+  azure_rm_subnet:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network_name: "{{resource_prefix}}-v-net"
+    name: AzureFirewallManagementSubnet
+    private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
+    private_link_service_network_policies: "Disabled"
+  register: management_subnet_output
+
+- name: Create a public ip address
+  azure_rm_publicipaddress:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-firewall-ip"
+    allocation_method: static
+    sku: standard
+  register: public_ip_output
+# - name: Create Azure Firewall
+#   shell: >
+#     az extension add --name azure-firewall && \
+#     az network firewall create \
+#       --resource-group {{ resource_group_name }} \
+#       --name {{resource_prefix}}-firewall \
+#       --enable-dns-proxy true
+#   register: firewall_output_raw
+
+# - name: Log Firewall
+#   debug: "msg={{ firewall_output_raw }}"
+
+# From the docs "Set up of the public IP address to the Azure Firewall may take a few minutes." (it took 12 mins for me)
+- name: Create Azure Firewall IP Config
+  command: >
+    az network firewall ip-config create \
+      --resource-group {{ resource_group_name }} \
+      -f {{resource_prefix}}-firewall \
+      --name {{resource_prefix}}-firewall-ip-config \
+      --public-ip-address {{resource_prefix}}-firewall-ip \
+      --vnet-name {{resource_prefix}}-v-net
+  register: firewall_ip_config_output_raw
+
+- name: Set Public IP
+  set_fact:
+    fw_public_ip: "{{ public_ip_output.state.ip_address }}"
+
+- name: Set Private IP
+  set_fact:
+    fw_private_ip: "{{ (firewall_ip_config_output_raw.stdout|from_json).privateIpAddress }}"
+
+- name: Create a route table
+  azure_rm_routetable:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-fwrt"
+    disable_bgp_route_propagation: false
+
+- name: Create route to firewall
+  azure_rm_route:
+    name: "{{resource_prefix}}--fwrn"
+    resource_group: "{{ resource_group_name }}"
+    route_table_name: "{{resource_prefix}}-fwrt"
+    address_prefix: 0.0.0.0/0
+    next_hop_type: virtual_appliance
+    next_hop_ip_address: "{{ fw_private_ip }}"
+
+- name: Create route from firewall
+  azure_rm_route:
+    name: "{{resource_prefix}}--fwinternet"
+    resource_group: "{{ resource_group_name }}"  
+    route_table_name: "{{resource_prefix}}-fwrt"
+    address_prefix: "{{ fw_public_ip }}/32"
+    next_hop_type: internet 
+
+- name: Add Firewall Rules # Slow!
+  shell: |
+    az network firewall network-rule create --resource-group {{ resource_group_name }} -f {{resource_prefix}}-firewall --collection-name 'aksfwnr' -n 'apiudp' --protocols 'UDP' --source-addresses '*' --destination-addresses "AzureCloud.{{ azure_region }}" --destination-ports 1194 --action allow --priority 100 
+    az network firewall network-rule create --resource-group {{ resource_group_name }} -f {{resource_prefix}}-firewall --collection-name 'aksfwnr' -n 'apitcp' --protocols 'TCP' --source-addresses '*' --destination-addresses "AzureCloud.{{ azure_region }}" --destination-ports 9000
+    az network firewall network-rule create --resource-group {{ resource_group_name }} -f {{resource_prefix}}-firewall --collection-name 'aksfwnr' -n 'time' --protocols 'UDP' --source-addresses '*' --destination-fqdns 'ntp.ubuntu.com' --destination-ports 123
+
+- name: Create Firewall Application rules
+  command: >
+    az network firewall application-rule create --resource-group {{ resource_group_name }} -f {{resource_prefix}}-firewall --collection-name 'aksfwar' -n 'fqdn' --source-addresses '*' --protocols 'http=80' 'https=443' --fqdn-tags "AzureKubernetesService" --action allow --priority 100
+
+- name:
+  command: >
+    az network vnet subnet update \
+      --resource-group {{ resource_group_name }} \
+      --vnet-name $VNET_NAME \
+      --name $AKSSUBNET_NAME \
+      --route-table $FWROUTE_TABLE_NAME
