@@ -101,25 +101,3 @@
   command: >
     rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
   with_items: "{{ k8s_yaml }}"
-
-# - name: Setup backup job
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
-#     namespace: "{{ application_namespace }}"
-#     kubeconfig: "{{ kubeconfig }}"
-#   become: false
-#   when: fjelltopp_env_type == 'prod'
-#   with_items:
-#     - db_backup_cronjob.yaml
-
-# - name: Setup db restore job
-#   kubernetes.core.k8s:
-#     state: present
-#     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
-#     namespace: "{{ application_namespace }}"
-#     kubeconfig: "{{ kubeconfig }}"
-#   become: false
-#   when: fjelltopp_env_type != 'prod' and restore_production_backup
-#   with_items:
-#     - db_restore_cronjob.yaml
