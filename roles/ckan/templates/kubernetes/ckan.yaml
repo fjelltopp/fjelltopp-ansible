@@ -23,6 +23,15 @@ type: Opaque
 {% endif %}
 
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: google-analytics-credentials
+data:
+  google_analytics_credentials.json: "{{ google_analytics_credentials | b64encode }}"
+type: Opaque
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -95,11 +104,11 @@ spec:
               export HOME=/usr/lib/ckan/;
               pipenv --version;
               pipenv sync --dev;
-              ./bootstrap.sh;
               rm -rf venv;
               ln -s .minikubevenv/ckan-ALitmJXH venv;
               ls -la /usr/lib/ckan/venv/;
-              sh /tmp/ckan_bootstrap.sh
+              sh /tmp/ckan_bootstrap.sh;
+              ./bootstrap.sh
 
           volumeMounts:
             - mountPath: /usr/lib/ckan
@@ -115,6 +124,10 @@ spec:
               name: ckan-storage
             - mountPath: /var/lib/ckan/webassets
               name: ckan-webassets
+            - mountPath: /tmp/google_analytics_credentials.json
+              name: google-analytics-credentials
+              readOnly: true
+              subPath: google_analytics_credentials.json
 
 
 {% endif %}
@@ -220,6 +233,9 @@ spec:
         - secret:
             secretName: ckan-bootstrap
           name: ckan-bootstrap
+        - secret:
+            secretName: google-analytics-credentials
+          name: google-analytics-credentials
 {% endif %}
         - name: ckan-configs
           secret:
