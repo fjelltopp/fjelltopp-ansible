@@ -26,10 +26,11 @@ spec:
               - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_email_notifications;
                  curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications;
                  ckan -c /etc/ckan/production.ini googleanalytics load /tmp/google_analytics_credentials.json"
-          - mountPath: /tmp/google_analytics_credentials.json
-            name: google-analytics-credentials
-            readOnly: true
-            subPath: google_analytics_credentials.json
+          volumeMounts:
+            - mountPath: /tmp/google_analytics_credentials.json
+              name: google-analytics-credentials
+              readOnly: true
+              subPath: google_analytics_credentials.json
 
           restartPolicy: Never
           volumes:
