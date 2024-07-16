@@ -124,13 +124,12 @@ spec:
               name: ckan-storage
             - mountPath: /var/lib/ckan/webassets
               name: ckan-webassets
-            - mountPath: /tmp/google_analytics_credentials.json
+{% endif %}
+            - mountPath: {{ google_analytics_credentials_path }}
               name: google-analytics-credentials
               readOnly: true
               subPath: google_analytics_credentials.json
 
-
-{% endif %}
       containers:
         - env:
             - name: CKAN_DATAPUSHER_URL
@@ -233,13 +232,13 @@ spec:
         - secret:
             secretName: ckan-bootstrap
           name: ckan-bootstrap
-        - secret:
-            secretName: google-analytics-credentials
-          name: google-analytics-credentials
 {% endif %}
         - name: ckan-configs
           secret:
             secretName: ckan-configs
+        - name: google-analytics-credentials
+          secret:
+            secretName: google-analytics-credentials
 
 ---
 apiVersion: v1

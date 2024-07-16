@@ -24,16 +24,26 @@ spec:
             command: ['bash', '-c']
             args:
               - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_email_notifications;
-                 curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications;
-                 ckan -c /etc/ckan/production.ini googleanalytics load /tmp/google_analytics_credentials.json"
-          volumeMounts:
-            - mountPath: /tmp/google_analytics_credentials.json
-              name: google-analytics-credentials
-              readOnly: true
-              subPath: google_analytics_credentials.json
+                 curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications"
 
           restartPolicy: Never
-          volumes:
-            - secret:
-                secretName: google-analytics-credentials
-              name: google-analytics-credentials
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ckan-googleanalytics-cronjob
+spec:
+  schedule: "0 */6 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ckan-cronjob
+            image: {{ fjelltopp_base_image }}
+            command: ['bash', '-c']
+            args:
+              - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' --json '{\"credentials_path\": {{ google_analytics_credentials_path }} }' {{ ckan_site_url }}/api/action/download_package_stats"
+
+          restartPolicy: Never
