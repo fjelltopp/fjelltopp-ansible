@@ -28,7 +28,7 @@ kind: Secret
 metadata:
   name: google-analytics-credentials
 data:
-  google_analytics_credentials.json: "{{ google_analytics_credentials | b64encode }}"
+  google_analytics_credentials.json: "{{ google_analytics_credentials | to_json | b64encode }}"
 type: Opaque
 
 ---
