@@ -1,13 +1,4 @@
 ---
-apiVersion: v1
-kind: Secret
-metadata:
-  name: google-analytics-credentials
-data:
-  google_analytics_credentials.json: "{{ google_analytics_credentials | b64encode }}"
-type: Opaque
-
----
 apiVersion: batch/v1
 kind: CronJob
 metadata:
