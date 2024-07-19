@@ -15,5 +15,26 @@ spec:
             command: ['bash', '-c']
             args:
               - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_email_notifications;
-                curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications"
+                 curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications"
+
+          restartPolicy: Never
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ckan-googleanalytics-cronjob
+spec:
+  schedule: "0 */6 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ckan-cronjob
+            image: {{ fjelltopp_base_image }}
+            command: ['bash', '-c']
+            args:
+              - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"{{ google_analytics_credentials_path }}\" }' {{ ckan_site_url }}/api/action/download_package_stats"
+
           restartPolicy: Never
