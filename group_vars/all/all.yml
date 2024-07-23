@@ -38,8 +38,9 @@ helm_arch: amd64
 
 # SOLR
 # Based on https://hub.docker.com/_/solr/
-solr_image: "ckan/ckan-solr-dev"
-solr_image_tag: "2.9-py2"
+solr_image: "ckan/ckan-solr"
+solr_image_tag: "2.10"
+solr_extra_fields: ""
 
 # Base image version to use with e.g. cron jobs
 fjelltopp_base_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ubuntu"
