@@ -112,6 +112,26 @@ giftless_url: "http://{{ ckan_fqdn }}/giftless"
 giftless_image: "ghcr.io/fjelltopp/fjelltopp-base-images/giftless"
 giftless_version: "v0.4.0-fjelltopp"
 
+# Google analytics
+ckan_googleanalytics_enable: false
+ckan_googleanalytics_credentials: |-
+  {
+    "type": "",
+    "project_id": "",
+    "private_key_id": "",
+    "private_key": "{{ ckan_googleanalytics_private_key }}",
+    "client_email": "",
+    "client_id": "",
+    "auth_uri": "",
+    "token_uri": "",
+    "auth_provider_x509_cert_url": "",
+    "client_x509_cert_url": "",
+    "universe_domain": ""
+  }
+ckan_googleanalytics_credentials_path: "/tmp/google_analytics_credentials.json"
+ckan_googleanalytics_measurement_id: ""
+ckan_googleanalytics_property_id: ""
+
 # who.ini
 
 who_authenticators: |-
