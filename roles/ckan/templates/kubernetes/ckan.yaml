@@ -22,6 +22,7 @@ data:
 type: Opaque
 {% endif %}
 
+{% if enable_google_analytics is defined and enable_google_analytics %}
 ---
 apiVersion: v1
 kind: Secret
@@ -30,6 +31,7 @@ metadata:
 data:
   google_analytics_credentials.json: "{{ google_analytics_credentials | to_json | b64encode }}"
 type: Opaque
+{% endif %}
 
 ---
 apiVersion: apps/v1
@@ -125,11 +127,12 @@ spec:
             - mountPath: /var/lib/ckan/webassets
               name: ckan-webassets
 {% endif %}
+{% if enable_google_analytics is defined and enable_google_analytics %}
             - mountPath: {{ google_analytics_credentials_path }}
               name: google-analytics-credentials
               readOnly: true
               subPath: google_analytics_credentials.json
-
+{% endif %}
       containers:
         - env:
             - name: CKAN_DATAPUSHER_URL
@@ -236,9 +239,11 @@ spec:
         - name: ckan-configs
           secret:
             secretName: ckan-configs
+{% if enable_google_analytics is defined and enable_google_analytics %}
         - name: google-analytics-credentials
           secret:
             secretName: google-analytics-credentials
+{% endif %}
 
 ---
 apiVersion: v1

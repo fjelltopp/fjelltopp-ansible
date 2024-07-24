@@ -19,6 +19,7 @@ spec:
 
           restartPolicy: Never
 
+{% if enable_google_analytics is defined and enable_google_analytics %}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -38,3 +39,4 @@ spec:
               - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"{{ google_analytics_credentials_path }}\" }' {{ ckan_site_url }}/api/action/download_package_stats"
 
           restartPolicy: Never
+{% endif %}
