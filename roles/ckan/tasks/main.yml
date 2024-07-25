@@ -1,13 +1,20 @@
 ---
 - name: Load default variables
   include_vars: secrets.yml
-  when: fjelltopp_env_type != 'local'
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure'
 
-- include: ./secrets.yml
-  when: fjelltopp_env_type != 'local'
+- include_tasks: ./secrets.yml
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure'
+
+- include_tasks: ./azure-secrets.yml
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'azure'
 
 - include_role:
     name: k8s-context
   when: fjelltopp_env_type == 'local'
 
-- include: ./deploy.yml
+- include_tasks: ./azure-deploy.yml
+  when: fjelltopp_cloud_provider == 'azure'
+
+- include_tasks: ./deploy.yml
+  when: fjelltopp_cloud_provider != 'azure'

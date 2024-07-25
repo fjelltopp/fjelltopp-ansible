@@ -5,7 +5,7 @@ metadata:
   name: ckan-db-bootstrap
 data:
   ckan_db_bootstrap.sh: "{{ lookup('template', 'templates/ckan/db_init.sh') | b64encode }}"
-  ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init.sql') | b64encode }}"
+  ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init_azure.sql') | b64encode }}"
 type: Opaque
 
 ---
@@ -21,10 +21,11 @@ spec:
       containers:
         - env:
             - name: POSTGRES_HOSTNAME
-              value: "{{ ckan_db_hostname }}"
+              value: "{{ db_fqdn }}"
             - name: POSTGRES_USER
-              value: "{{ rds_admin_username }}"
-            
+              value: "{{ azure_db_admin_username }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ azure_db_admin_password }}"
           name: ckan-db-init
           image: postgres:13
           command: ['bash', '-c']

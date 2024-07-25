@@ -1,0 +1,87 @@
+- name: Create Virtual Network for Postgres DB
+  azure_rm_virtualnetwork:
+    resource_group: "{{ resource_group_name }}"
+    name: "{{resource_prefix}}-v-net-db"
+    address_prefixes_cidr:
+      - "{{db_vpc_cidr_block}}"
+  register: vnet_output
+    
+- name: Create a subnet for DB
+  azure_rm_subnet:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network_name: "{{resource_prefix}}-v-net-db"
+    name: sb_internal_01_db
+    address_prefix_cidr: "{{db_vpc_cidr_subnet}}"
+    private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
+    private_link_service_network_policies: "Disabled"
+    state: present
+  register: subnet_output
+
+- name: Create virtual network peering
+  azure_rm_virtualnetworkpeering:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network: "{{resource_prefix}}-v-net-db"
+    name: "{{resource_prefix}}-peering-db-to-aks"
+    remote_virtual_network:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{resource_prefix}}-v-net"
+    allow_virtual_network_access: true
+    allow_forwarded_traffic: false
+    state: present
+
+- name: Create reverse virtual network peering
+  azure_rm_virtualnetworkpeering:
+    resource_group: "{{ resource_group_name }}"
+    virtual_network: "{{resource_prefix}}-v-net"
+    name: "{{resource_prefix}}-peering-aks-to-db"
+    remote_virtual_network:
+      resource_group: "{{ resource_group_name }}"
+      name: "{{resource_prefix}}-v-net-db"
+    allow_virtual_network_access: true
+    allow_forwarded_traffic: false
+    state: present
+
+# Check if the DB exists, as create will fail if it exists. The create command WON'T update the existing DB, so any changes to the DB need to be applied in a different way.
+# Once this whole part is transformed to ansible native, it will be...better
+# _most_ az create commands are idempotent, but https://github.com/Azure/azure-cli/issues/26770 ¯\_(ツ)_/¯
+- name: Check if db exists
+  command: >
+    az postgres flexible-server show \
+      --resource-group {{ resource_group_name }} \
+      --name "{{ db_server_name }}"
+  register: result
+  ignore_errors: true
+
+# azure.azcollection.azure_rm_postgresqlserver creates a single instance which Azure is retiring March 2025. 
+# Ansible will support flexible server when https://github.com/ansible-collections/azure/issues/714 ships. 
+# For now, do it the hard way
+- name: Create Postgres flexible server
+  when: result is failed
+  command: >
+    az postgres flexible-server create \
+      --resource-group {{ resource_group_name }} \
+      --admin-password "{{ azure_db_admin_password }}" \
+      --admin-user "{{ azure_db_admin_username }}" \
+      --backup-retention "{{ azure_db_backup_retention_period }}" \
+      --database-name ckan \
+      --name "{{ db_server_name }}"
+      --sku-name Standard_B2s
+      --storage-size "{{ azure_db_allocated_storage }}" \
+      --tier Burstable \
+      --version "13" \
+      --vnet {{resource_prefix}}-v-net-db \
+      --subnet sb_internal_01_db \
+      --yes
+  
+  # Connect the DB database zone with the AKS subnet so it can resolve it
+- name: Create DNS Zone link
+  command: >
+    az network private-dns link vnet create \
+          --name aks-db \
+          --registration-enabled 1 \
+          --resource-group {{ resource_group_name }} \
+          --virtual-network {{resource_prefix}}-v-net \
+          --zone-name {{ db_server_name }}.private.postgres.database.azure.com
+  failed_when: # If it already exists, it's not a failure (this is one of a variety of non-idempotent commands)
+    - result.rc != 0
+    - '"exists already" not in result.stderr'
