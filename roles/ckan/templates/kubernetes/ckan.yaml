@@ -231,11 +231,6 @@ spec:
         - name: ckan-configs
           secret:
             secretName: ckan-configs
-{% if ckan_googleanalytics_enable %}
-        - name: ckan-configs
-          secret:
-            secretName: google-analytics-credentials
-{% endif %}
 
 ---
 apiVersion: v1

@@ -19,7 +19,7 @@ spec:
 
           restartPolicy: Never
 
-{% if enable_google_analytics is defined and enable_google_analytics %}
+{% if ckan_googleanalytics_enable %}
 ---
 apiVersion: batch/v1
 kind: CronJob
