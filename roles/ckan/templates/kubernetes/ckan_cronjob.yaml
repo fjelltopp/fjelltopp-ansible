@@ -19,6 +19,7 @@ spec:
 
           restartPolicy: Never
 
+{% if ckan_googleanalytics_enable %}
 ---
 apiVersion: batch/v1
 kind: CronJob
@@ -35,6 +36,7 @@ spec:
             image: {{ fjelltopp_base_image }}
             command: ['bash', '-c']
             args:
-              - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"{{ google_analytics_credentials_path }}\" }' {{ ckan_site_url }}/api/action/download_package_stats"
+              - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"{{ ckan_googleanalytics_credentials_path }}\" }' {{ ckan_site_url }}/api/action/download_package_stats"
 
           restartPolicy: Never
+{% endif %}
