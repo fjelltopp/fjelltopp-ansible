@@ -218,6 +218,7 @@ spec:
 {% endif %}
       restartPolicy: Always
       volumes:
+{% if fjelltopp_cloud_provider == 'azure' %}
         - name: ckan-storage
           persistentVolumeClaim:
             claimName: ckan-storage-blob
@@ -227,6 +228,17 @@ spec:
         - name: ckan-resources
           persistentVolumeClaim:
             claimName: ckan-resources-blob
+{% else %}
+        - name: ckan-storage
+          persistentVolumeClaim:
+            claimName: ckan-storage
+        - name: ckan-webassets
+          persistentVolumeClaim:
+            claimName: ckan-webassets
+        - name: ckan-resources
+          persistentVolumeClaim:
+            claimName: ckan-resources
+{% endif %}
 
 {% if fjelltopp_env_type == 'local' %}
         - name: localckan
