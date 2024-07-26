@@ -29,6 +29,7 @@ jenkins_aws_account_id: "791438942407"
 # Environment type - local is for Minikube, aws for AWS :)
 # by default it's local
 fjelltopp_env_type: "local"
+fjelltopp_cloud_provider: ''
 
 # Helm role
 # https://github.com/helm/helm/releases/
