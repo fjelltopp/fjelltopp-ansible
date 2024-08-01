@@ -65,6 +65,12 @@
     --name {{resource_prefix}}-aks \
     --resource-group {{ resource_group_name }} \
 
+- name: Allow AKS to access ACR
+  command: >
+    az aks update --attach-acr {{acr_name}} \
+    --name {{resource_prefix}}-aks \
+    --resource-group {{ resource_group_name }}
+    
 # TODO: (Maybe) Remove public control plane network with CLI
 - name: Create a storage account for the data lake
   azure_rm_storageaccount:
