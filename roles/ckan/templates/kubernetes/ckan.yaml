@@ -208,13 +208,13 @@ spec:
       volumes:
         - name: ckan-storage
           persistentVolumeClaim:
-            claimName: ckan-storage-blob
+            claimName: ckan-storage
         - name: ckan-webassets
           persistentVolumeClaim:
-            claimName: ckan-webassets-blob
+            claimName: ckan-webassets
         - name: ckan-resources
           persistentVolumeClaim:
-            claimName: ckan-resources-blob
+            claimName: ckan-resources
 
 {% if fjelltopp_env_type == 'local' %}
         - name: localckan
