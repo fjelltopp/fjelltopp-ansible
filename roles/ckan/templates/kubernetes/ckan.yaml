@@ -119,12 +119,6 @@ spec:
             - mountPath: /var/lib/ckan/webassets
               name: ckan-webassets
 {% endif %}
-{% if ckan_googleanalytics_enable %}
-            - mountPath: {{ ckan_googleanalytics_credentials_path }}
-              name: ckan-configs
-              readOnly: true
-              subPath: ckan_googleanalytics_credentials.json
-{% endif %}
       containers:
         - env:
             - name: CKAN_DATAPUSHER_URL
