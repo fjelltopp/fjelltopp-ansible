@@ -130,10 +130,8 @@ ckan_googleanalytics_credentials: |-
     "client_x509_cert_url": "",
     "universe_domain": ""
   }
-ckan_googleanalytics_credentials_path: "/tmp/google_analytics_credentials.json"
 
 # who.ini
-
 who_authenticators: |-
   [authenticators]
   plugins =
