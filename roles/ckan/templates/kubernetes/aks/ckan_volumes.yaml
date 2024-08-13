@@ -1,12 +1,22 @@
 ---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:  
+  name: azureblob-nfs-premium
+provisioner: file.csi.azure.com
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - uid=900
+  - gid=900
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   labels:
     app: ckan
-  name: ckan-resources-blob
+  name: ckan-resources
 spec:
-  persistentVolumeReclaimPolicy: Retain
   accessModes:
   - ReadWriteMany
   storageClassName: azureblob-nfs-premium
@@ -20,9 +30,8 @@ kind: PersistentVolumeClaim
 metadata:
   labels:
     app: ckan
-  name: ckan-webassets-blob
+  name: ckan-webassets
 spec:
-  persistentVolumeReclaimPolicy: Retain
   accessModes:
   - ReadWriteMany
   storageClassName: azureblob-nfs-premium
@@ -36,9 +45,8 @@ kind: PersistentVolumeClaim
 metadata:
   labels:
     app: ckan
-  name: ckan-storage-blob
+  name: ckan-storage
 spec:
-  persistentVolumeReclaimPolicy: Retain
   accessModes:
   - ReadWriteMany
   storageClassName: azureblob-nfs-premium

@@ -26,7 +26,7 @@ spec:
               value: "{{ rds_admin_username }}"
             - name: POSTGRES_PASSWORD
               value: "{{ ckan_postgres_password }}"
- 
+
           name: ckan-db-init
           image: postgres:13
           command: ['bash', '-c']
