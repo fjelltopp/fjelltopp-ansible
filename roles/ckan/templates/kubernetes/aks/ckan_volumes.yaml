@@ -7,8 +7,6 @@ provisioner: file.csi.azure.com
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
 mountOptions:
-  - dir_mode=0777
-  - file_mode=0777
   - uid=900
   - gid=900
 
