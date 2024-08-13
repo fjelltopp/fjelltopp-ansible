@@ -101,4 +101,3 @@
   command: >
     rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
   with_items: "{{ k8s_yaml }}"
-
