@@ -14,4 +14,6 @@ echo "make admin superuser"
 ckan -c "$CONFIG" sysadmin add admin
 echo "Set datastore permissions"
 ckan -c "$CONFIG" datastore set-permissions | psql "${CKAN_SQLALCHEMY_URL}"
+echo "Build search index"
+ckan -c "$CONFIG" search-index rebuild
 echo bootstrap finished
