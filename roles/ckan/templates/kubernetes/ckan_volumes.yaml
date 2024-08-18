@@ -22,7 +22,7 @@ metadata:
   labels:
     app: ckan
 spec:
-{% if fjelltopp_env_type !== 'local' %}  
+{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
@@ -39,7 +39,7 @@ metadata:
     app: ckan
   name: ckan-webassets
 spec:
-{% if fjelltopp_env_type !== 'local' %}  
+{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
@@ -57,7 +57,7 @@ metadata:
     app: ckan
   name: ckan-resources
 spec:
-{% if fjelltopp_env_type !== 'local' %}  
+{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
 {% endif %} 
   accessModes:
