@@ -5,7 +5,7 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:  
   name: "{{ storage_class_name }}"
-provisioner: file.csi.azure.com
+provisioner: blob.csi.azure.com
 volumeBindingMode: Immediate
 allowVolumeExpansion: true
 mountOptions:
