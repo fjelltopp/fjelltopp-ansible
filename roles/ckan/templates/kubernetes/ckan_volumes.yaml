@@ -26,7 +26,7 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
-    - "{{  fjelltopp_cloud_provider == 'azure' | ternary('ReadWriteMany', 'ReadWriteOnce') }}" # Azure supports ReadWriteMany and it's required for rolling deployments
+    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" # Azure supports ReadWriteMany and it's required for rolling deployments
   resources:
     requests:
       storage: 1Gi
@@ -43,7 +43,7 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
-    - "{{  fjelltopp_cloud_provider == 'azure' | ternary('ReadWriteMany', 'ReadWriteOnce') }}" 
+    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" 
   resources:
     requests:
       storage: 1Gi
