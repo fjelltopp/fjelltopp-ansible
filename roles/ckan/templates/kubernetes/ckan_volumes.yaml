@@ -1,3 +1,18 @@
+# Setup Azure Storage Class
+{% if fjelltopp_cloud_provider == 'azure'}
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:  
+  name: "{{ storage_class_name }}"
+provisioner: file.csi.azure.com
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+mountOptions:
+  - uid=900
+  - gid=900
+{% endif}
+
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
