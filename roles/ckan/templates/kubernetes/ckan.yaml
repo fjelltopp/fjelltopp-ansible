@@ -198,8 +198,8 @@ spec:
               name: ckan-webassets
             - mountPath: /var/lib/ckan/resources
               name: ckan-resources
-            - name: ckan-configs
-              mountPath: /etc/ckan
+            - mountPath: /etc/ckan
+              name: ckan-configs
               readOnly: true
 
 {% if fjelltopp_env_type == 'local' %}

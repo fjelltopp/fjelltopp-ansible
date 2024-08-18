@@ -1,35 +1,37 @@
-{% if fjelltopp_env_type == 'local' %}
 ---
-apiVersion: v1
 kind: PersistentVolumeClaim
+apiVersion: v1
 metadata:
+  name: ckan-storage
   creationTimestamp: null
   labels:
     app: ckan
-  name: ckan-storage
 spec:
+{% if fjelltopp_env_type !== 'local' %}  
+  storageClassName: "{{ storage_class_name }}"
+{% endif %}  
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 100Mi
-status: {}
-
+      storage: 1000Mi
 ---
-apiVersion: v1
 kind: PersistentVolumeClaim
+apiVersion: v1
 metadata:
   creationTimestamp: null
   labels:
     app: ckan
   name: ckan-webassets
 spec:
+{% if fjelltopp_env_type !== 'local' %}  
+  storageClassName: "{{ storage_class_name }}"
+{% endif %}  
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 100Mi
-status: {}
+      storage: 1000Mi
 
 ---
 apiVersion: v1
@@ -40,6 +42,9 @@ metadata:
     app: ckan
   name: ckan-resources
 spec:
+{% if fjelltopp_env_type !== 'local' %}  
+  storageClassName: "{{ storage_class_name }}"
+{% endif %} 
   accessModes:
     - ReadWriteOnce
   resources:
@@ -47,7 +52,8 @@ spec:
       storage: 100Mi
 status: {}
 
-
+# Local Only Volumes
+{% if fjelltopp_env_type == 'local' %}
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -84,48 +90,4 @@ spec:
       storage: 20Gi
   volumeName: localckan
 status: {}
-
-{% else %}
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: ckan-storage
-spec:
-  storageClassName: "{{ storage_class_name }}"
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 1000Mi
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: ckan-webassets
-spec:
-  storageClassName: "{{ storage_class_name }}"
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 1000Mi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  labels:
-    app: ckan
-  name: ckan-resources
-spec:
-  storageClassName: "{{ storage_class_name }}"
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-status: {}
-
 {% endif %}
-
