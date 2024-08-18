@@ -1,5 +1,5 @@
 # Setup Azure Storage Class
-{% if fjelltopp_cloud_provider == 'azure'}
+{% if fjelltopp_cloud_provider == 'azure' %}
 ---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
@@ -11,7 +11,7 @@ allowVolumeExpansion: true
 mountOptions:
   - uid=900
   - gid=900
-{% endif}
+{% endif %}
 
 ---
 kind: PersistentVolumeClaim
