@@ -49,7 +49,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ lookup('template', 'templates/ckan/ckan_production.ini') | sha256sum }} # This forces a rolling deployment if the config changes
+        checksum/config: {{ lookup('template', 'templates/ckan/ckan_production.ini') | hash('md5') }} # This forces a rolling deployment if the config changes
       creationTimestamp: null
       labels:
         app: ckan
