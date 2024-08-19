@@ -49,7 +49,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: {{ lookup('template', 'templates/ckan/ckan_production.ini') | hash('md5') }} # This forces a rolling deployment if the config changes
+        checksum/config: "{{ lookup('template', 'templates/ckan/ckan_production.ini') | hash('md5') }}" ## This forces a rolling deployment if the config changes
       creationTimestamp: null
       labels:
         app: ckan
@@ -154,7 +154,7 @@ spec:
               value: "/usr/lib/ckan"
 {% endif %}
           image: {{ ckan_image }}:{{ ckan_image_tag }}
-          imagePullPolicy: {% (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') %}
+          imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
           name: ckan
           
 # assume local user uid
