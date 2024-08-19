@@ -48,6 +48,8 @@ spec:
       maxSurge: 2
   template:
     metadata:
+      annotations:
+        checksum/config: "{{ lookup('template', 'templates/ckan/ckan_production.ini') | hash('md5') }}" ## This forces a rolling deployment if the config changes
       creationTimestamp: null
       labels:
         app: ckan
@@ -152,13 +154,7 @@ spec:
               value: "/usr/lib/ckan"
 {% endif %}
           image: {{ ckan_image }}:{{ ckan_image_tag }}
-          
-
-{% if fjelltopp_env_type == 'local' %}
-          imagePullPolicy: IfNotPresent
-{% else %}
-          imagePullPolicy: Always
-{% endif %}
+          imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
           name: ckan
           
 # assume local user uid
@@ -175,7 +171,7 @@ spec:
             httpGet:
               path: /
               port: 5000
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 5
             timeoutSeconds: 10
             failureThreshold: 15
@@ -201,7 +197,6 @@ spec:
             - mountPath: /etc/ckan
               name: ckan-configs
               readOnly: true
-
 {% if fjelltopp_env_type == 'local' %}
             - mountPath: /usr/lib/ckan
               name: localckan
