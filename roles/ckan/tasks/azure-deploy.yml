@@ -11,7 +11,7 @@
     --command "kubectl create namespace {{ application_namespace }}"
 
 - set_fact: 
-    storage_class_name: managed-csi # Azure
+    storage_class_name: azureblob-nfs-premium # Azure. This can actually be anything as we create a custom StorageClass with this name
 
 - name: Get datalake info
   azure.azcollection.azure_rm_storageaccount_info:

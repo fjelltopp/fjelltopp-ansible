@@ -198,8 +198,8 @@ spec:
               name: ckan-webassets
             - mountPath: /var/lib/ckan/resources
               name: ckan-resources
-            - name: ckan-configs
-              mountPath: /etc/ckan
+            - mountPath: /etc/ckan
+              name: ckan-configs
               readOnly: true
 
 {% if fjelltopp_env_type == 'local' %}
@@ -208,17 +208,6 @@ spec:
 {% endif %}
       restartPolicy: Always
       volumes:
-{% if fjelltopp_cloud_provider == 'azure' %}
-        - name: ckan-storage
-          persistentVolumeClaim:
-            claimName: ckan-storage-blob
-        - name: ckan-webassets
-          persistentVolumeClaim:
-            claimName: ckan-webassets-blob
-        - name: ckan-resources
-          persistentVolumeClaim:
-            claimName: ckan-resources-blob
-{% else %}
         - name: ckan-storage
           persistentVolumeClaim:
             claimName: ckan-storage
@@ -228,7 +217,6 @@ spec:
         - name: ckan-resources
           persistentVolumeClaim:
             claimName: ckan-resources
-{% endif %}
 
 {% if fjelltopp_env_type == 'local' %}
         - name: localckan
