@@ -67,8 +67,8 @@ azure-mgmt-recoveryservicesbackup = "==3.0.0"
 azure-mgmt-notificationhubs = "==7.0.0"
 azure-mgmt-eventhub = "==10.1.0"
 uamqp = "*"
-requests = {extras = ["security"], version = "*"}
+requests = {extras = ["security"] }
 psycopg2 = "~=2.9.9"
 
 [requires]
-python_version = "3.12.3"
+python_version = "3.11"
