@@ -29,7 +29,7 @@ spec:
     - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" # Azure supports ReadWriteMany and it's required for rolling deployments
   resources:
     requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
+      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '1000Mi') }}"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
