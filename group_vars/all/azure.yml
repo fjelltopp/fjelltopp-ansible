@@ -13,7 +13,7 @@ db_vpc_cidr_subnet: "172.18.0.0/18"
 worker_nodes_min: "{{ eks_worker_nodes_min }}"
 worker_nodes_max: "{{ eks_worker_nodes_max }}"
 worker_nodes_desired: 1
-worker_instance_type: "standard_a2_v2"
+worker_instance_type: "standard_d2as_v4"
 
 # Values used for naming resources and groups to fit in the Azure deploys
 application_name: "FjelltoppCKAN" # 2-15 Characters. No hyphens or underscores
@@ -38,4 +38,3 @@ ckan_superuser_email: "super@example.com"
 
 # This is an azure object ID that will have access to the KeyVault. It should be the object ID of the service principal that is used to run the ansible scripts
 vault_object_id: 000000-0000-000-0000
-
