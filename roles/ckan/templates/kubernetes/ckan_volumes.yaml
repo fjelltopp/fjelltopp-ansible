@@ -61,7 +61,7 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %} 
   accessModes:
-    - ReadWriteOnce
+    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}"
   resources:
     requests:
       storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
