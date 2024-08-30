@@ -29,7 +29,7 @@ spec:
     - ReadWriteMany
   resources:
     requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -43,10 +43,10 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
-    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" 
+    - ReadWriteMany
   resources:
     requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
+      storage: 1Gi
 
 ---
 apiVersion: v1
@@ -61,7 +61,7 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %} 
   accessModes:
-    - ReadWriteMany
+    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}"
   resources:
     requests:
       storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
