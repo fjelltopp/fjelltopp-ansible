@@ -20,9 +20,13 @@ adding the following entry:
 Guest IP can be retrieved by running `ip addr show` in the VM.  
 
 ## Prepare Environment (install Ansible)
+
+For Azure deployment, we use Python3.11 and a different set of requirements. To use this set the `PIPENV_PIPFILE` env var to `azure/Pipfile` before running the following steps. Locally or for AWS, just do the following:
+
 * `pipenv sync`
 * `pipenv shell`
 * `ansible-galaxy install -r roles/requirements.yml --force` # (on first run only)
+
 ## Run local setup playbook (install Minikube and deploys CKAN)
 * use inventory template from ./inventory/local_dev_example as a base for your own inventory file (instructions inside)
 * Setup requires root privileges for Minikube installation, if your account requires password on `sudo` then add "-K" after the "setup" string (it's going to ask for your password)
@@ -54,4 +58,3 @@ Default profile is set during setup_local_dev playbook execution. With multiple 
 ## Sync local repository into CKAN pod
 setup_local_dev.ymlscript syncs local files or directories with CKAN pod running on Minikube. Run it with two parameters, first: local_path and second: remote_path, where remote path is a path already inside /usr/lib/ckan, so it can be just / '
 Example: `./sync_local_repo.sh /home/michal/dms/ckanext-dms/ /`
-
