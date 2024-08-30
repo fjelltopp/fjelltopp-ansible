@@ -26,10 +26,10 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
-    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" # Azure supports ReadWriteMany and it's required for rolling deployments
+    - ReadWriteMany
   resources:
     requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -43,10 +43,10 @@ spec:
   storageClassName: "{{ storage_class_name }}"
 {% endif %}  
   accessModes:
-    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}" 
+    - ReadWriteMany
   resources:
     requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
+      storage: 1Gi
 
 ---
 apiVersion: v1
@@ -82,7 +82,7 @@ spec:
     name: localckan
     namespace: {{ application_namespace }}
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   capacity:
     storage: 20Gi
   hostPath:
