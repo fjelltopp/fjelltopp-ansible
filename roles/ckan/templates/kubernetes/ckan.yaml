@@ -86,6 +86,10 @@ spec:
               value: "/usr/lib/ckan/.minikubevenv"
             - name: XDG_CACHE_HOME
               value: "/usr/lib/ckan/.minikubevenv/cache"
+{% if ckan_googleanalytics_enable %}
+            - name: CKAN_GOOGLEANALYTICS_ENABLE
+              value: "1"
+{% endif %}
 
           image: {{ ckan_image }}:{{ ckan_image_tag }}
           imagePullPolicy: IfNotPresent
