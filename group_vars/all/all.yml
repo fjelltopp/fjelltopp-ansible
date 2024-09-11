@@ -53,7 +53,7 @@ ckan_fqdn: "ckan.minikube"
 ckan_site_url: "http://{{ ckan_fqdn }}"
 ckan_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ckan"
 ckan_image_tag: "2.9.8"
-ckan_db_image: "postgres"
+ckan_db_image: "postgres:15.8"
 
 # ckan_ds_ro_pass: "123456789"
 # ckan_ds_rw_pass: "123456789"
