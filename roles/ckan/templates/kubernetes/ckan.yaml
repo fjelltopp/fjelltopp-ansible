@@ -147,6 +147,8 @@ spec:
               value: "{{ ckan_postgres_password }}"
             - name: PIPENV_DONT_LOAD_ENV
               value: "1"
+            - name: CKAN_GOOGLEANALYTICS_ENABLED
+              value: "{{ ckan_googleanalytics_enable }}"
 {% if fjelltopp_cloud_provider != 'azure' %}
             - name: AWS_DEFAULT_REGION
               value: "{{ aws_region }}"
