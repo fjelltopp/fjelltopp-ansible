@@ -25,4 +25,3 @@
     line: "{{ cluster_ip }} {{ app_fqdn }}"
     state: present
     backup: yes
-  become: true
