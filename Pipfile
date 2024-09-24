@@ -21,6 +21,7 @@ xmltodict = "*"
 uamqp = "*"
 requests = {extras = ["security"], version = "*"}
 psycopg2 = "*"
+resolvelib = "==0.8.1"
 
 [requires]
 python_version = "3.8"
