@@ -22,3 +22,6 @@ collections:
 - name: community.postgresql
   accept_hostkey: true
   version: 3.4.1
+- name: amazon.aws
+  accept_hostkey: true
+  version: 5.0.0
