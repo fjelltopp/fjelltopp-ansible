@@ -19,7 +19,7 @@ awscli = "*"
 packaging = "*"
 xmltodict = "*"
 uamqp = "*"
-requests = {extras = ["security"], version = "*"}
+requests = {extras = ["security"], version = "<2.32"}
 psycopg2 = "*"
 resolvelib = "==0.8.1"
 
