@@ -68,6 +68,7 @@ ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@db/dat
 ckan_datastore_write_url: "postgresql://ckan:{{ ckan_postgres_password }}@db/datastore"
 datapusher_image: clementmouchet/datapusher # this version is incredibly old, but is the default for backwards compatibility. It should be overridden in most cases
 ckan_max_upload_size_mb: "256"
+ckan_cache_expires: "0"
 ckan_redis_url: "redis://redis:6379/1"
 
 ckan_solr_url: "http://solr:8983/solr/ckan"

@@ -68,6 +68,8 @@ spec:
               value: "{{ ckan_datastore_write_url }}"
             - name: CKAN_MAX_UPLOAD_SIZE_MB
               value: "{{ ckan_max_upload_size_mb }}"
+            - name: CKAN_CACHE_EXPIRES
+              value: "{{ ckan_cache_expires }}"
             - name: CKAN_REDIS_URL
               value: "{{ ckan_redis_url }}"
             - name: CKAN_SITE_URL
@@ -133,6 +135,8 @@ spec:
               value: {{ ckan_datastore_write_url }}
             - name: CKAN_MAX_UPLOAD_SIZE_MB
               value: "{{ ckan_max_upload_size_mb }}"
+            - name: CKAN_CACHE_EXPIRES
+              value: "{{ ckan_cache_expires }}"
             - name: CKAN_REDIS_URL
               value: "{{ ckan_redis_url }}"
             - name: CKAN_SITE_URL
@@ -160,7 +164,7 @@ spec:
           image: {{ ckan_image }}:{{ ckan_image_tag }}
           imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
           name: ckan
-          
+
 # assume local user uid
 {% if fjelltopp_env_type == 'local' %}
           tty: true

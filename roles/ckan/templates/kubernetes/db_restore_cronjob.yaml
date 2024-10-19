@@ -55,6 +55,8 @@ spec:
                   value: {{ ckan_datastore_write_url }}
                 - name: CKAN_MAX_UPLOAD_SIZE_MB
                   value: "{{ ckan_max_upload_size_mb }}"
+                - name: CKAN_CACHE_EXPIRES
+                  value: "{{ ckan_cache_expires }}"
                 - name: CKAN_REDIS_URL
                   value: "{{ ckan_redis_url }}"
                 - name: CKAN_SITE_URL
@@ -74,7 +76,7 @@ spec:
               args:
                 - cd /usr/lib/ckan/;
                   export HOME=/usr/lib/ckan/;
-                  pipenv run ckan -c /etc/ckan/production.ini search-index rebuild 
+                  pipenv run ckan -c /etc/ckan/production.ini search-index rebuild
 
               imagePullPolicy: Always
               name: ckan
