@@ -153,8 +153,7 @@ spec:
             - name: AWS_DEFAULT_REGION
               value: "{{ aws_region }}"
             - name: CKAN_SAML_IDP_CERT
-              value: |
-                {{ ckan_saml_idp_cert }}
+              value: "{{ ckan_saml_idp_cert | to_yaml }}"
 {% endif %}
 {% if fjelltopp_env_type == 'local' %}
             - name: HOME
