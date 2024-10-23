@@ -88,6 +88,8 @@ spec:
               value: "/usr/lib/ckan/.minikubevenv/cache"
             - name: CKAN_GOOGLEANALYTICS_ENABLED
               value: "{{ ckan_googleanalytics_enable }}"
+            - name: CKAN_SAML_IDP_CERT
+              value: "{{ ckan_saml_idp_cert }}"
 
           image: {{ ckan_image }}:{{ ckan_image_tag }}
           imagePullPolicy: IfNotPresent
@@ -160,7 +162,7 @@ spec:
           image: {{ ckan_image }}:{{ ckan_image_tag }}
           imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
           name: ckan
-          
+
 # assume local user uid
 {% if fjelltopp_env_type == 'local' %}
           tty: true
