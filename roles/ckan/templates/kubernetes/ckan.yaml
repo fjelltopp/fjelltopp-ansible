@@ -184,16 +184,16 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 10
             failureThreshold: 15
-{% if fjelltopp_env_type != 'local' %}
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 5000
-            initialDelaySeconds: 10
-            periodSeconds: 5
-            timeoutSeconds: 10
-            failureThreshold: 15
-{% endif %}
+# {% if fjelltopp_env_type != 'local' %}
+#           livenessProbe:
+#             httpGet:
+#               path: /
+#               port: 5000
+#             initialDelaySeconds: 10
+#             periodSeconds: 5
+#             timeoutSeconds: 10
+#             failureThreshold: 15
+# {% endif %}
           ports:
             - containerPort: 5000
               protocol: TCP
