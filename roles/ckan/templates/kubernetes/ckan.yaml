@@ -167,7 +167,7 @@ spec:
           name: ckan
 
 # assume local user uid
-{% if fjelltopp_env_type == 'local' %}
+{% if fjelltopp_env_type != 'tmp_always' %}
           tty: true
           stdin: true
           securityContext:
