@@ -167,9 +167,11 @@ spec:
           name: ckan
 
 # assume local user uid
-{% if fjelltopp_env_type == 'local' %}
+{% if fjelltopp_env_type != 'always' %}
           tty: true
           stdin: true
+{% endif %}
+{% if fjelltopp_env_type == 'local' %}
           securityContext:
             allowPrivilegeEscalation: false
             runAsUser: {{ ansible_user_uid }}
