@@ -75,9 +75,9 @@ ckan_solr_url: "http://solr:8983/solr/ckan"
 ckan_plugins: "stats text_view image_view recline_view blob_storage authz_service"
 
 # CKAN Front-End Settings
-ckan_site_title: "Document Management System"
+ckan_site_title: "CKAN"
 ckan_site_logo: "/images/logo.png"
-ckan_site_description: "Department of HIV & AIDS, Ministry of Health, Malawi"
+ckan_site_description: "Data Portal"
 ckan_favicon: "/images/favicon.ico"
 ckan_gravatar_default: "identicon"
 ckan_preview_direct: "png jpg gif"
