@@ -131,6 +131,9 @@ ckan_googleanalytics_credentials: |-
     "universe_domain": ""
   }
 
+# SAML
+ckan_saml_idp_cert: ""
+
 # who.ini
 who_authenticators: |-
   [authenticators]
@@ -139,3 +142,4 @@ who_authenticators: |-
       ckan.lib.authenticator:UsernamePasswordAuthenticator
 
 storage_class_name: "efs-client"
+ckan_login_form_url: "/user/login"

@@ -152,15 +152,20 @@ spec:
 {% if fjelltopp_cloud_provider != 'azure' %}
             - name: AWS_DEFAULT_REGION
               value: "{{ aws_region }}"
+            - name: CKAN_SAML_IDP_CERT
+              value: |-
+                {{ ckan_saml_idp_cert }}
 {% endif %}
 {% if fjelltopp_env_type == 'local' %}
+            - name: CKAN_SAML_IDP_CERT
+              value: "{{ ckan_saml_idp_cert }}"
             - name: HOME
               value: "/usr/lib/ckan"
 {% endif %}
           image: {{ ckan_image }}:{{ ckan_image_tag }}
           imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
           name: ckan
-          
+
 # assume local user uid
 {% if fjelltopp_env_type == 'local' %}
           tty: true
