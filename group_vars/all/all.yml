@@ -143,3 +143,4 @@ who_authenticators: |-
 
 storage_class_name: "efs-client"
 ckan_login_form_view: "user.login"
+ckan_cache_expires: "0"
