@@ -91,7 +91,7 @@
 
 - name: Setup database parameters
   set_fact:
-    ckan_postgres_password: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
+    ckan_rds_admin_pw: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
     ckan_ds_ro_pass: "{{ lookup('aws_secret', application_namespace + '_datastore_ro_dbuser_password' , region = aws_region ) }}"
     ckan_ds_rw_pass: "{{ lookup('aws_secret', application_namespace + '_datastore_dbuser_password' , region = aws_region ) }}"
     ckan_db_hostname: "{{ ckan_rds_info.instances[0].endpoint.address }}"
