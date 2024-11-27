@@ -142,4 +142,5 @@ who_authenticators: |-
       ckan.lib.authenticator:UsernamePasswordAuthenticator
 
 storage_class_name: "efs-client"
-ckan_login_form_url: "/user/login"
+ckan_login_form_view: "user.login"
+ckan_cache_expires: "0"
