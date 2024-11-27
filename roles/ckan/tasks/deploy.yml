@@ -73,10 +73,7 @@
   become: false
   with_items:
     - db.yaml
-  # FIP-3 TODO
-  # Commented out for now, as there's a hardcoded db name in ckan_bootstrap, fix requires a custom
-  # container image
-  # when: fjelltopp_env_type == 'local'
+  when: fjelltopp_env_type == 'local'
 
 - name: Check if DB is alive [local] (10 tries, 5sec interval)
   community.postgresql.postgresql_ping:
