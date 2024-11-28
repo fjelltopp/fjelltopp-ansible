@@ -112,7 +112,7 @@ use_giftless: false
 giftless_url: "http://{{ ckan_fqdn }}/giftless"
 giftless_image: "ghcr.io/fjelltopp/fjelltopp-base-images/giftless"
 giftless_version: "v0.4.0-fjelltopp"
-giftless_debug: "0"
+giftless_debug: "false" #set to literal "true" to enable
 
 # Google analytics
 ckan_googleanalytics_enable: false
