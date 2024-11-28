@@ -19,7 +19,7 @@ type: Opaque
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: 
+metadata:
   name: giftless
   annotations:
     reloader.stakater.com/auto: "true"
@@ -29,11 +29,11 @@ spec:
   strategy:
     type: Recreate
   selector:
-    matchLabels: 
+    matchLabels:
       app: giftless
   template:
     metadata:
-      labels: 
+      labels:
         app: giftless
     spec:
       containers:
@@ -52,7 +52,7 @@ spec:
         - 0.0.0.0:5001
         env:
         - name: GIFTLESS_DEBUG
-          value: "1"
+          value: {{ giftless_debug }}
         - name: GIFTLESS_CONFIG_FILE
           value: /app/giftless.yaml
         image: "{{ giftless_image }}:{{ giftless_version }}"
@@ -80,7 +80,7 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-metadata: 
+metadata:
   name: giftless
 {% if fjelltopp_env_type != 'local' and giftless_s3_bucket is defined %}
   annotations:
@@ -88,7 +88,7 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ certificate_acm.certificates[0].certificate_arn }}
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "giftless-http"
 {% endif %}
-{% if giftless_azure_blob_string is defined %}      
+{% if giftless_azure_blob_string is defined %}
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     service.beta.kubernetes.io/azure-pls-create: "true"
@@ -98,13 +98,11 @@ metadata:
     service.beta.kubernetes.io/azure-pls-visibility: "*"
 {% endif %}
 spec:
-{% if giftless_azure_blob_string is defined %}     
+{% if giftless_azure_blob_string is defined %}
   type: LoadBalancer
 {% endif %}
   ports:
   - name: 'giftless-http'
     port: 5001
-  selector: 
+  selector:
     app: giftless
-
-
