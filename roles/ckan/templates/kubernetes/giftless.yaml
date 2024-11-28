@@ -52,7 +52,7 @@ spec:
         - 0.0.0.0:5001
         env:
         - name: GIFTLESS_DEBUG
-          value: {{ giftless_debug }}
+          value: "{{ giftless_debug }}"
         - name: GIFTLESS_CONFIG_FILE
           value: /app/giftless.yaml
         image: "{{ giftless_image }}:{{ giftless_version }}"
