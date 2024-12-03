@@ -2,11 +2,11 @@
 aws_region: "eu-west-1"
 # Current EKS Kubernetes version
 # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-k8s_version: "1.24"
+k8s_version: "1.30"
 # Current Minikube Kubernetes version - should be in sync with EKS
 # minikube versions https://github.com/kubernetes/minikube/releases
-minikube_version: "1.25.2"
-minikube_kubernetes_version: "1.24.0"
+minikube_version: "1.34.0"
+minikube_kubernetes_version: "1.30"
 kubeconfig: "{{ ansible_env.HOME}}/.kube/config"
 
 # EKS
