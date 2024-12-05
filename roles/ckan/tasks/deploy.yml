@@ -10,7 +10,7 @@
 
 - set_fact:
     storageClassName: "efs-client"
-    
+
 - name: obtain ACM certficate info
   community.aws.aws_acm_info:
     aws_region: "{{ aws_region }}"
@@ -79,7 +79,7 @@
   community.postgresql.postgresql_ping:
     db: ckan
     login_host: "{{ ckan_fqdn }}"
-    login_user: "{{ rds_admin_username }}"
+    login_user: "ckan"
     login_password: "{{ ckan_postgres_password }}"
   when: (fjelltopp_env_type == 'local')
   register: db_ping_result
