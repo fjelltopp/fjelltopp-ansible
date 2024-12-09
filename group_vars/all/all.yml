@@ -115,6 +115,7 @@ giftless_version: "v0.4.0-fjelltopp"
 
 # Google analytics
 ckan_googleanalytics_enable: false
+ckan_googleanalytics_api_secret: ""
 ckan_googleanalytics_private_key: ""
 ckan_googleanalytics_credentials: |-
   {
