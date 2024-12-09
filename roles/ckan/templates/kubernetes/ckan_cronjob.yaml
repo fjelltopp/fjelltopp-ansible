@@ -37,6 +37,7 @@ spec:
             command: ['bash', '-c']
             args:
               - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"/etc/ckan/google_analytics_credentials.json\" }' {{ ckan_site_url }}/api/action/download_package_stats"
+              - "curl -rl -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' -d '{\"credentials_path\": \"/etc/ckan/google_analytics_credentials.json\" }' {{ ckan_site_url }}/api/action/download_url_stats"
 
           restartPolicy: Never
 {% endif %}
