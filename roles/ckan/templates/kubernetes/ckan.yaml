@@ -10,7 +10,9 @@ data:
   ckan-uwsgi.ini: "{{ lookup('template', 'templates/ckan/ckan-uwsgi.ini') | b64encode }}"
   wsgi.py: "{{ lookup('template', 'templates/ckan/wsgi.py') | b64encode }}"
 {% if ckan_googleanalytics_enable %}
-  google_analytics_credentials.json: "{{ ckan_googleanalytics_credentials | to_json | b64encode }}"
+  google_analytics_credentials.json: "{{ ckan_googleanalytics_credentials | b64encode }}"
+  google_analytics_credentials.json2: "{{ ckan_googleanalytics_credentials | to_json | b64encode }}"
+  google_analytics_credentials.json3: '{{ ckan_googleanalytics_credentials | b64encode }}'
 {% endif %}
 type: Opaque
 
