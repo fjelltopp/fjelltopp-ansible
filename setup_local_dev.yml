@@ -22,5 +22,4 @@
   roles:
     - { role: gantsign.minikube, tags: ["setup", "all"] }
     - { role: geerlingguy.helm, tags: ["setup", "all"] }
-    - { role: minikube-setup, tags: ["setup", "all"] }
-
+    - { role: minikube-setup, tags: ["setup_arm_mac", "all"] }
