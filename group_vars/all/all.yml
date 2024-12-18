@@ -111,7 +111,7 @@ ckan_smtp_mail_from: "support@fjelltopp.org"
 use_giftless: false
 giftless_url: "http://{{ ckan_fqdn }}/giftless"
 giftless_image: "ghcr.io/fjelltopp/fjelltopp-base-images/giftless"
-giftless_version: "v0.4.0-fjelltopp"
+giftless_version: "v0.5.3"
 giftless_debug: "false" #set to literal "true" to enable
 
 # Google analytics
