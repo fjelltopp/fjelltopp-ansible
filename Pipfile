@@ -4,24 +4,31 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-ansible-lint = "*"
-flake8 = "*"
-yamllint = "*"
+ansible-lint = "==24.12.2"
+flake8 = "==7.1.1"
+yamllint = "==1.35.1"
 
 [packages]
-ansible = "*"
-boto = "*"
-boto3 = "*"
-botocore = "*"
-openshift = "*"
-docker = "*"
-awscli = "*"
-packaging = "*"
-xmltodict = "*"
-uamqp = "*"
+ansible = "==10.7.0"
+awscli = "==1.36.23"
+boto = "==2.49.0"
+boto3 = "==1.35.82"
+botocore = "==1.35.82"
+docker = "==7.1.0"
+openshift = "==0.13.2"
+packaging = "==24.2"
+psycopg2 = "==2.9.10"
+uamqp = "==1.6.11"
+xmltodict = "==0.14.2"
+
+# The requests library was downgraded in commit `d7bd3dde37b5e0c07101d04bd3529e50940f4674`.
+# It is not clear why this was needed but since 2.32 is indeed the latest patch,
+# we will get 2.31 which is not far behind.
 requests = {extras = ["security"], version = "<2.32"}
-psycopg2 = "*"
-resolvelib = "==0.8.1"
+
+# This package was fixed to 0.8.1 in commit `57f27d2011cef0c60857eb23430bf23f8dbe283d`.
+# It has been upgraded to be compatible with the version recommended for ansible.
+resolvelib = "==1.0.1"
 
 [requires]
 python_version = "3.10"
