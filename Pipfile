@@ -21,13 +21,11 @@ psycopg2 = "==2.9.10"
 uamqp = "==1.6.11"
 xmltodict = "==0.14.2"
 
-# The requests library was downgraded in commit `d7bd3dde37b5e0c07101d04bd3529e50940f4674`.
-# It is not clear why this was needed but since 2.32 is indeed the latest patch,
-# we will get 2.31 which is not far behind.
+# See PR: https://github.com/fjelltopp/fjelltopp-ansible/pull/34
+# for why requests needs to be less than 2.32 until otherwise
 requests = {extras = ["security"], version = "<2.32"}
 
-# This package was fixed to 0.8.1 in commit `57f27d2011cef0c60857eb23430bf23f8dbe283d`.
-# It has been upgraded to be compatible with the version recommended for ansible.
+# resolvelib must be versioned to be compatible with ansible.
 resolvelib = "==1.0.1"
 
 [requires]
