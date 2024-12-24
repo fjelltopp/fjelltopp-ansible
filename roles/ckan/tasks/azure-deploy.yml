@@ -10,7 +10,7 @@
     az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
     --command "kubectl create namespace {{ application_namespace }}"
 
-- set_fact: 
+- set_fact:
     storage_class_name: azureblob-nfs-premium # Azure. This can actually be anything as we create a custom StorageClass with this name
 
 - name: Get datalake info
@@ -78,20 +78,20 @@
       - ckan_volumes.yaml
       - ckan.yaml
       - ckan_ingress.yaml
-      # - ckan_cronjob.yaml
+      - ckan_cronjob.yaml
 
 # Look up the files, defaulting to the cloud provider specific version, falling back to a generic version
-- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  
+- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command
   template:
     src: "{{ lookup('first_found', 'templates/kubernetes/aks/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
     dest: "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
-  with_items: "{{ k8s_yaml }}"  
+  with_items: "{{ k8s_yaml }}"
 
 # This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
 - name: Deploy CKAN
   command: >
     az aks command invoke \
-    --resource-group {{ resource_group_name }} 
+    --resource-group {{ resource_group_name }}
     --name {{resource_prefix}}-aks \
     --command "kubectl apply -n {{ application_namespace }} -f {{item}}" \
     --file "{{ lookup('first_found', 'templates/kubernetes/aks/out/{{ item }}') }}"
