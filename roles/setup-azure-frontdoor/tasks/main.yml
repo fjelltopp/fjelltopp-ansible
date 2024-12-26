@@ -314,4 +314,4 @@
       --type {{ item.0 }} \
       --rule-group-id {{ item.1 }} \
       --rule-id {{ item.2 }}
-  with_items: "{{ azure_waf_rule_overrides + custom_azure_waf_rule_overrides }}"
+  with_items: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
