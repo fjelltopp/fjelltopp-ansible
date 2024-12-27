@@ -13,10 +13,13 @@
     --resource-group {{ resource_group_name }} \
     --sku Premium_AzureFrontDoor
 
+- set_fact:
+    waf_policy_name: "{{ alphanumeric_resource_name_prefix | lower }}wafpolicy"
+
 - name: Create Policy for WAF
   command: >
     az network front-door waf-policy create \
-      --name {{resource_prefix}}-waf-policy \
+      --name {{ waf_policy_name }} \
       --resource-group {{ resource_group_name }} \
       --mode Prevention
   # or 'Detection'
@@ -29,7 +32,7 @@
   command: >
     az network front-door waf-policy managed-rules add \
       --resource-group {{ resource_group_name }} \
-      --policy-name {{resource_prefix}}-waf-policy \
+      --policy-name {{ waf_policy_name }} \
       --type Microsoft_DefaultRuleSet --version 2.1 --action Block
 
 # The Bot Manager 1.1 rule set is an enhancement to Bot Manager 1.0 rule set. It provides enhanced protection against malicious bots, and increases good bot detection.
@@ -38,7 +41,7 @@
   command: >
     az network front-door waf-policy managed-rules add \
       --resource-group {{ resource_group_name }} \
-      --policy-name {{resource_prefix}}-waf-policy \
+      --policy-name {{ waf_policy_name }} \
       --type Microsoft_BotManagerRuleSet \
       --version 1.1
 
@@ -85,7 +88,7 @@
   command: >
     az network front-door waf-policy managed-rules override add \
       --disabled \
-      --policy-name {{resource_prefix}}-waf-policy \
+      --policy-name {{waf_policy_name}} \
       --resource-group {{ resource_group_name }} \
       --type {{ item.0 }} \
       --rule-group-id {{ item.1 }} \
