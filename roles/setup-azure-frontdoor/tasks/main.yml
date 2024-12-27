@@ -272,7 +272,7 @@
     --supported-protocols Https \
     --https-redirect Enabled \
     --forwarding-protocol HttpOnly \
-    {{ custom_afd_domain | ternary('--custom-domains custom_afd_domain', '--link-to-default-domain Enabled') }}
+    {{ custom_afd_domain_id | ternary('--custom-domains ' + custom_afd_domain_id, '--link-to-default-domain Enabled') }}
 
 - name: Create route for Giftless
   command: >
