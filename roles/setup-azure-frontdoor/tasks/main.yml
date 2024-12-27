@@ -47,7 +47,9 @@
 
 # The following rules are disabled by default as they result in false positives.
 # https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32#microsoft-threat-intelligence-collection-rules
-# We also disable a lot because CKAN will trigger them
+
+# We also disable a lot because CKAN will trigger them, these were found by logging the WAF logs and seeing what was being triggered during normal use of CKAN.
+# Additional custom rules can be added to the list below, in the format ["rule-set", "rule-group-id", "rule-id"], or defined in the inventory/group_vars etc as a list of lists (like this) under `custom_azure_waf_rule_overrides`
 - name: Define rules we disable
   set_fact:
     azure_waf_rule_overrides:
