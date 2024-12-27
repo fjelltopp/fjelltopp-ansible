@@ -145,6 +145,23 @@
       --header-name Access-Control-Allow-Origin \
       --header-value {{ ckan_hostname }}
 
+- name: CORS Origin header and condition custom domain rule
+  command: >
+    az afd rule create \
+      --resource-group {{ resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{resource_prefix}}-afd \
+      --rule-name corsheaders \
+      --selector Origin \
+      --match-variable RequestHeader \
+      --operator Equal \
+      --match-values {{ ckan_site_url }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Origin \
+      --header-value {{ ckan_site_url }}
+  when: custom_afd_domain_id is defined
+
 - name: Add CORS Headers header to rule
   command: >
     az afd rule action add --resource-group {{ resource_group_name }} \
