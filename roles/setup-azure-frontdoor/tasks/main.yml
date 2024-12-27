@@ -257,6 +257,8 @@
       --private-link-request-message 'Please approve this request' \
       --private-link-location {{ azure_region }}
 
+# If a custom domain is set, the route is attached to that, if not (ie on first run or without a custom domain) it is attached to the default domain
+# The WAf policy is attached to the route later
 - name: Create route for CKAN
   command: >
     az afd route create \
@@ -268,9 +270,9 @@
     --origin-group {{resource_prefix}}-og-ckan \
     --enabled-state Enabled \
     --supported-protocols Https \
-    --link-to-default-domain Enabled \
     --https-redirect Enabled \
-    --forwarding-protocol HttpOnly
+    --forwarding-protocol HttpOnly \
+    {{ custom_afd_domain | ternary('--custom-domains custom_afd_domain, '--link-to-default-domain Enabled') }}
 
 - name: Create route for Giftless
   command: >
