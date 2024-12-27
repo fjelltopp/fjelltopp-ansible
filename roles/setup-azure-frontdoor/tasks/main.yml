@@ -86,14 +86,17 @@
 
 - name: Apply WAF Rule Overrides
   command: >
+    echo "{{ item }}"
+    echo "{{ item[0] }}"
+
     az network front-door waf-policy managed-rules override add \
       --disabled \
       --policy-name {{waf_policy_name}} \
       --resource-group {{ resource_group_name }} \
-      --type {{ item.0 }} \
-      --rule-group-id {{ item.1 }} \
-      --rule-id {{ item.2 }}
-  with_items: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
+      --type {{ item[0] }} \
+      --rule-group-id {{ item[1] }} \
+      --rule-id {{ item[2] }}
+  loop: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
 
 - name: Create Front Door Endpoint For Ckan
   command: >
