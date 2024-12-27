@@ -278,8 +278,9 @@
       --private-link-request-message 'Please approve this request' \
       --private-link-location {{ azure_region }}
 
-# If a custom domain is set, the route is attached to that, if not (ie on first run or without a custom domain) it is attached to the default domain
-# The WAf policy is attached to the route later
+# If a custom domain is set, the route is attached to that, if not (ie on first run or without a custom domain) it is attached to the default domain.
+# We only attach it to one domain at a time, but to debug, you CAN manually add the route to the other domain in the Azure Portal.
+# The WAF policy is attached to the route later
 - name: Create route for CKAN
   command: >
     az afd route create \
@@ -345,11 +346,19 @@
     --description "Approved"
   when: (ckan_pls_pending_output.stdout|from_json)[0].properties.privateLinkServiceConnectionState.status == "Pending"
 
+- set_fact:
+    custom_afd_domain_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ resource_prefix }}-afd/customdomains/{{ custom_afd_domain_id }}"
+    when: custom_afd_domain_id is defined
+- set_fact:
+# /subscriptions/ec6de091-2438-4d4e-a60a-e7aff6f2cbcd/resourcegroups/AFDATAHUB-T-EU-RG01/providers/Microsoft.Cdn/profiles/AFDATAHUB-T-afd/afdendpoints/afdatahub-t-ckan
+    endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ resource_prefix }}-afd/afdendpoints/{{ ckan_endpoint_name }}"
+    when: custom_afd_domain_id is not defined
+
 - name: Apply the WAF policy to the endpoint
   command: >
     az afd security-policy create \
       --resource-group {{ resource_group_name }} \
       --profile-name {{ resource_prefix }}-afd \
       --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
-      --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_id, ckan_endpoint_name) }} \
+      --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_full_id, endpoint_full_id) }} \
       --waf-policy {{ waf_policy_name }}
