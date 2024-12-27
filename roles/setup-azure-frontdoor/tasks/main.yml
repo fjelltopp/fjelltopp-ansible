@@ -351,17 +351,29 @@
     when: custom_afd_domain_id is defined
 
 - set_fact:
-    endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ resource_prefix }}-afd/afdendpoints/{{ ckan_endpoint_name }}"
+    ckan_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ resource_prefix }}-afd/afdendpoints/{{ ckan_endpoint_name }}"
     when: custom_afd_domain_id is not defined
+
+- set_fact:
+    giftless_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ resource_prefix }}-afd/afdendpoints/{{ giftless_endpoint_name }}"
 
 - set_fact:
     waf_policy_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Network/frontDoorWebApplicationFirewallPolicies/{{ waf_policy_name }}"
 
-- name: Apply the WAF policy to the endpoint
+- name: Apply the WAF policy to the CKAN endpoint
   command: >
     az afd security-policy create \
       --resource-group {{ resource_group_name }} \
       --profile-name {{ resource_prefix }}-afd \
       --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
-      --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_full_id, endpoint_full_id) }} \
+      --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_full_id, ckan_endpoint_full_id) }} \
+      --waf-policy {{ waf_policy_id }}
+
+- name: Apply the WAF policy to the Giftless endpoint
+  command: >
+    az afd security-policy create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{ resource_prefix }}-afd \
+      --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
+      --domains {{ giftless_endpoint_full_id }} \
       --waf-policy {{ waf_policy_id }}
