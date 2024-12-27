@@ -97,12 +97,16 @@
       --rule-id {{ item[2] }}
   loop: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
 
+- set_fact:
+    ckan_endpoint_name: "{{ resource_prefix|lower }}-ckan"
+    giftless_endpoint_name: "{{ resource_prefix|lower }}-giftless"
+
 - name: Create Front Door Endpoint For Ckan
   command: >
     az afd endpoint create \
       --resource-group {{ resource_group_name }} \
       --profile-name {{resource_prefix}}-afd \
-      --endpoint-name {{resource_prefix|lower}}-ckan \
+      --endpoint-name {{ ckan_endpoint_name }} \
       --enabled-state Enabled
   register: ckan_endpoint_output
 
@@ -111,7 +115,7 @@
     az afd endpoint create \
       --resource-group {{ resource_group_name }} \
       --profile-name {{resource_prefix}}-afd \
-      --endpoint-name {{resource_prefix|lower}}-giftless \
+      --endpoint-name {{ giftless_endpoint_name }} \
       --enabled-state Enabled
   register: giftless_endpoint_output
 
@@ -265,7 +269,7 @@
     --resource-group {{ resource_group_name }} \
     --profile-name {{resource_prefix}}-afd \
     --route-name ckan-route \
-    --endpoint-name {{resource_prefix|lower}}-ckan \
+    --endpoint-name {{ ckan_endpoint_name }} \
     --patterns '/*' \
     --origin-group {{resource_prefix}}-og-ckan \
     --enabled-state Enabled \
@@ -280,7 +284,7 @@
     --resource-group {{ resource_group_name }} \
     --profile-name {{resource_prefix}}-afd \
     --route-name giftless-route \
-    --endpoint-name {{resource_prefix|lower}}-giftless \
+    --endpoint-name {{ giftless_endpoint_name }} \
     --patterns '/*' \
     --origin-group {{resource_prefix}}-og-giftless \
     --enabled-state Enabled \
@@ -324,10 +328,11 @@
     --description "Approved"
   when: (ckan_pls_pending_output.stdout|from_json)[0].properties.privateLinkServiceConnectionState.status == "Pending"
 
-# - name: Apply the WAF policy to the endpoint
-#   command: >
-#     az afd security-policy create \
-#       --resource-group {{ resource_group_name }} \
-#       --profile-name {{resource_prefix}}-afd \
-#       --security-policy-name contososecurity \
-#       --domains /subscriptions/mysubscription/resourcegroups/myRGFD/providers/Microsoft.Cdn/profiles/contosoafd/afdEndpoints/contosofrontend --waf-policy /subscriptions/mysubscription/resourcegroups/myRGFD/providers/Microsoft.Network/frontdoorwebapplicationfirewallpolicies/contosoWAF
+- name: Apply the WAF policy to the endpoint
+  command: >
+    az afd security-policy create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{ resource_prefix }}-afd \
+      --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
+      --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_id, ckan_endpoint_name) }} \
+      --waf-policy {{ waf_policy_name }}
