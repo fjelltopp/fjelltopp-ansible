@@ -86,9 +86,6 @@
 
 - name: Apply WAF Rule Overrides
   command: >
-    echo "{{ item }}"
-    echo "{{ item[0] }}"
-
     az network front-door waf-policy managed-rules override add \
       --disabled \
       --policy-name {{waf_policy_name}} \
