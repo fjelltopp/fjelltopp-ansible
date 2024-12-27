@@ -272,7 +272,7 @@
     --supported-protocols Https \
     --https-redirect Enabled \
     --forwarding-protocol HttpOnly \
-    {{ custom_afd_domain | ternary('--custom-domains custom_afd_domain, '--link-to-default-domain Enabled') }}
+    {{ custom_afd_domain | ternary('--custom-domains custom_afd_domain', '--link-to-default-domain Enabled') }}
 
 - name: Create route for Giftless
   command: >
@@ -323,3 +323,11 @@
     -n {{ (ckan_pls_pending_output.stdout|from_json)[0].name }}
     --description "Approved"
   when: (ckan_pls_pending_output.stdout|from_json)[0].properties.privateLinkServiceConnectionState.status == "Pending"
+
+# - name: Apply the WAF policy to the endpoint
+#   command: >
+#     az afd security-policy create \
+#       --resource-group {{ resource_group_name }} \
+#       --profile-name {{resource_prefix}}-afd \
+#       --security-policy-name contososecurity \
+#       --domains /subscriptions/mysubscription/resourcegroups/myRGFD/providers/Microsoft.Cdn/profiles/contosoafd/afdEndpoints/contosofrontend --waf-policy /subscriptions/mysubscription/resourcegroups/myRGFD/providers/Microsoft.Network/frontdoorwebapplicationfirewallpolicies/contosoWAF
