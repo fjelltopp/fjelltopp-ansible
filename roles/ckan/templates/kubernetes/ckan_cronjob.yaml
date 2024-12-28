@@ -14,8 +14,8 @@ spec:
             image: {{ fjelltopp_base_image }}
             command: ['bash', '-c']
             args:
-              - "curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_email_notifications;
-                 curl -rl -X POST -H 'Authorization: {{ ckan_sysadmin_api_key }}' {{ ckan_site_url }}/api/action/send_sms_notifications"
+              - "curl -rl -X POST -H 'Authorization: {{ ckan_admin_api_token }}' {{ ckan_site_url }}/api/action/send_email_notifications;"
+              - "curl -rl -X POST -H 'Authorization: {{ ckan_admin_api_token }}' {{ ckan_site_url }}/api/action/send_phone_notifications;"
 
           restartPolicy: Never
 
