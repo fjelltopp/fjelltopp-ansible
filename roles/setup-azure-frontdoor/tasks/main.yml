@@ -13,7 +13,7 @@
 - name: Create Front Door Profile
   command: >
     az afd profile create \
-    --profile-name afd_profile_name \
+    --profile-name {{ afd_profile_name }} \
     --resource-group {{ resource_group_name }} \
     --sku Premium_AzureFrontDoor
 
@@ -113,7 +113,7 @@
   command: >
     az afd endpoint create \
       --resource-group {{ resource_group_name }} \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --endpoint-name {{ ckan_endpoint_name }} \
       --enabled-state Enabled
   register: ckan_endpoint_output
@@ -122,7 +122,7 @@
   command: >
     az afd endpoint create \
       --resource-group {{ resource_group_name }} \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --endpoint-name {{ giftless_endpoint_name }} \
       --enabled-state Enabled
   register: giftless_endpoint_output
@@ -135,14 +135,14 @@
      az afd rule-set create \
       --resource-group {{ resource_group_name }} \
       --name giftlesscors \
-      --profile-name afd_profile_name
+      --profile-name {{ afd_profile_name }}
 
 - name: CORS Origin header and condition base rule
   command: >
     az afd rule create \
       --resource-group {{ resource_group_name }} \
       --rule-set-name giftlesscors \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --rule-name corsheaders \
       --selector Origin \
       --match-variable RequestHeader \
@@ -158,7 +158,7 @@
     az afd rule create \
       --resource-group {{ resource_group_name }} \
       --rule-set-name giftlesscors \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --rule-name corsheaders \
       --selector Origin \
       --match-variable RequestHeader \
@@ -174,7 +174,7 @@
   command: >
     az afd rule action add --resource-group {{ resource_group_name }} \
       --rule-set-name giftlesscors \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --rule-name corsheaders \
       --action-name ModifyResponseHeader \
       --header-action Overwrite \
@@ -185,7 +185,7 @@
   command: >
     az afd rule action add --resource-group {{ resource_group_name }} \
       --rule-set-name giftlesscors \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --rule-name corsheaders \
       --action-name ModifyResponseHeader \
       --header-action Overwrite \
@@ -197,7 +197,7 @@
   command: >
     az afd origin-group create \
     --resource-group {{ resource_group_name }} \
-    --profile-name afd_profile_name \
+    --profile-name {{ afd_profile_name }} \
     --origin-group-name {{resource_prefix}}-og-ckan \
     --probe-request-type GET \
     --probe-protocol Http \
@@ -212,7 +212,7 @@
   command: >
     az afd origin-group create \
     --resource-group {{ resource_group_name }} \
-    --profile-name afd_profile_name \
+    --profile-name {{ afd_profile_name }} \
     --origin-group-name {{resource_prefix}}-og-giftless \
     --probe-request-type GET \
     --probe-protocol Http \
@@ -243,7 +243,7 @@
       --host-name {{ ckan_pls_alias }} \
       --origin-host-header {{ ckan_fqdn }} \
       --resource-group {{ resource_group_name }} \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --origin-group-name {{resource_prefix}}-og-ckan \
       --origin-name ckan-origin \
       --priority 1 \
@@ -273,7 +273,7 @@
       --host-name {{ giftless_pls_alias }} \
       --origin-host-header {{ giftless_pls_alias }} \
       --resource-group {{ resource_group_name }} \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --origin-group-name {{resource_prefix}}-og-giftless \
       --origin-name ckan-origin \
       --priority 1 \
@@ -293,7 +293,7 @@
   command: >
     az afd route create \
     --resource-group {{ resource_group_name }} \
-    --profile-name afd_profile_name \
+    --profile-name {{ afd_profile_name }} \
     --route-name ckan-route \
     --endpoint-name {{ ckan_endpoint_name }} \
     --patterns '/*' \
@@ -308,7 +308,7 @@
   command: >
     az afd route create \
     --resource-group {{ resource_group_name }} \
-    --profile-name afd_profile_name \
+    --profile-name {{ afd_profile_name }} \
     --route-name giftless-route \
     --endpoint-name {{ giftless_endpoint_name }} \
     --patterns '/*' \
@@ -357,15 +357,15 @@
 
 # Securiy Policy creation requires full ids, so create them first
 - set_fact:
-    custom_afd_domain_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/afd_profile_name/customdomains/{{ custom_afd_domain_id }}"
+    custom_afd_domain_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/customdomains/{{ custom_afd_domain_id }}"
     when: custom_afd_domain_id is defined
 
 - set_fact:
-    ckan_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/afd_profile_name/afdendpoints/{{ ckan_endpoint_name }}"
+    ckan_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ ckan_endpoint_name }}"
     when: custom_afd_domain_id is not defined
 
 - set_fact:
-    giftless_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/afd_profile_name/afdendpoints/{{ giftless_endpoint_name }}"
+    giftless_endpoint_full_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ giftless_endpoint_name }}"
 
 - set_fact:
     waf_policy_id: "/subscriptions/{{ subscription_output.subscriptions[0].subscription_id }}/resourcegroups/{{ resource_group_name }}/providers/Microsoft.Network/frontDoorWebApplicationFirewallPolicies/{{ waf_policy_name }}"
@@ -374,12 +374,12 @@
   command: >
     az afd security-policy create \
       --resource-group {{ resource_group_name }} \
-      --profile-name afd_profile_name \
+      --profile-name {{ afd_profile_name }} \
       --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
       --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_full_id, ckan_endpoint_full_id) }} {{ giftless_endpoint_full_id }} \
       --waf-policy {{ waf_policy_id }}
 
-- name: Check on async WAF
+- name: Check on async WAF # If you don't do this, we'll never know if the async job failed
   async_status:
     jid: "{{ async_results.ansible_job_id }}"
   register: job_result
