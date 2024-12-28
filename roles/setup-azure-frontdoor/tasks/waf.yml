@@ -71,7 +71,9 @@
       --query "[*].rules[?ruleId=='{{ item[2] }}'][] | [0].enabledState")
 
     echo $RESULT
-    # If result is Disabled, we don't need to apply the rule
+
+    # If result is Disabled, we dont need to apply the rule
+
     if [ "$RESULT" != "Disabled" ]; then
       az network front-door waf-policy managed-rules override add \
         --disabled \
