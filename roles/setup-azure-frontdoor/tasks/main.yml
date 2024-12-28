@@ -86,6 +86,7 @@
       - ["Microsoft_DefaultRuleSet", "SQLI", "942390"]
       - ["Microsoft_DefaultRuleSet", "SQLI", "942380"]
 
+# This is incredibly slow, so we run it async. We can still use and assign the policy before it's finished.
 - name: Apply WAF Rule Overrides
   command: >
     az network front-door waf-policy managed-rules override add \
@@ -96,6 +97,9 @@
       --rule-group-id {{ item[1] }} \
       --rule-id {{ item[2] }}
   loop: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
+  async: 360
+  poll: 0
+  register: async_results
 
 - set_fact:
     ckan_endpoint_name: "{{ resource_prefix|lower }}-ckan"
@@ -377,3 +381,11 @@
       --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
       --domains {{ giftless_endpoint_full_id }} \
       --waf-policy {{ waf_policy_id }}
+
+- name: Check on async WAF
+  async_status:
+    jid: "{{ yum_sleeper.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 100
+  delay: 10
