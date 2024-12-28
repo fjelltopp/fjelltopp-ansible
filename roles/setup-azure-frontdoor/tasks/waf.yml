@@ -1,0 +1,85 @@
+
+# DRS 2.1 includes 17 rule groups, as shown in the following table.
+# Each group contains multiple rules, and you can customize behavior for individual rules, rule groups, or entire rule set.
+# DRS 2.1 is baselined off the Open Web Application Security Project (OWASP) Core Rule Set (CRS) 3.3.2 and includes additional proprietary protections rules developed by Microsoft Threat Intelligence team.
+# https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32#drs-21
+- name: Add managed default ruleset to WAF policy
+  command: >
+    az network front-door waf-policy managed-rules add \
+      --resource-group {{ resource_group_name }} \
+      --policy-name {{ waf_policy_name }} \
+      --type Microsoft_DefaultRuleSet --version 2.1 --action Block
+
+# The Bot Manager 1.1 rule set is an enhancement to Bot Manager 1.0 rule set. It provides enhanced protection against malicious bots, and increases good bot detection.
+# https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32#bot-manager-11
+- name: Add bot ruleset to WAF policy
+  command: >
+    az network front-door waf-policy managed-rules add \
+      --resource-group {{ resource_group_name }} \
+      --policy-name {{ waf_policy_name }} \
+      --type Microsoft_BotManagerRuleSet \
+      --version 1.1
+
+# The following rules are disabled by default as they result in false positives.
+# https://learn.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-crs-rulegroups-rules?tabs=owasp32#microsoft-threat-intelligence-collection-rules
+
+# We also disable a lot because CKAN will trigger them, these were found by logging the WAF logs and seeing what was being triggered during normal use of CKAN.
+# Additional custom rules can be added to the list below, in the format ["rule-set", "rule-group-id", "rule-id"], or defined in the inventory/group_vars etc as a list of lists (like this) under `custom_azure_waf_rule_overrides`
+- name: Define rules we disable
+  set_fact:
+    azure_waf_rule_overrides:
+    # --type Microsoft_DefaultRuleSet --rule-group-id SQLI --rule-id 942430
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942430"]
+      - ["Microsoft_DefaultRuleSet", "RFI", "931130"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942440"]
+      - ["Microsoft_DefaultRuleSet", "MS-ThreatIntel-SQLI", "99031002"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942120"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942200"]
+      - ["Microsoft_DefaultRuleSet", "PHP", "933210"]
+      - ["Microsoft_DefaultRuleSet", "General", "200003"]
+      - ["Microsoft_DefaultRuleSet", "General", "200002"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942400"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942210"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942410"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942150"]
+      - ["Microsoft_DefaultRuleSet", "MS-ThreatIntel-SQLI", "99031003"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942340"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942260"]
+      - ["Microsoft_DefaultRuleSet", "MS-ThreatIntel-SQLI", "99031004"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942330"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942100"]
+      - ["Microsoft_DefaultRuleSet", "PHP", "933160"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942370"]
+      - ["Microsoft_DefaultRuleSet", "PROTOCOL-ATTACK", "921110"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942110"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942140"]
+      - ["Microsoft_DefaultRuleSet", "MS-ThreatIntel-SQLI", "99031001"]
+      - ["Microsoft_DefaultRuleSet", "XSS", "941340"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942190"]
+      - ["Microsoft_DefaultRuleSet", "XSS", "941150"]
+      - ["Microsoft_DefaultRuleSet", "XSS", "941370"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942390"]
+      - ["Microsoft_DefaultRuleSet", "SQLI", "942380"]
+
+# This can be VERY slow, so we actually check if we need to apply the rule first
+
+- name: Apply WAF Rule Overrides
+  command: >
+    RESULT=$(az network front-door waf-policy managed-rules override list \
+      --policy-name {{ waf_policy_name }} \
+      --resource-group {{ resource_group_name }} \
+      --type {{ item[0] }} \
+      --query "[*].rules[][]")
+
+    echo $RESULT
+    # If result is Disabled, we don't need to apply the rule
+    if [ "$RESULT" != "Disabled" ]; then
+      az network front-door waf-policy managed-rules override add \
+        --disabled \
+        --policy-name {{ waf_policy_name }} \
+        --resource-group {{ resource_group_name }} \
+        --type {{ item[0] }} \
+        --rule-group-id {{ item[1] }} \
+        --rule-id {{ item[2] }}
+    fi
+  loop: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
