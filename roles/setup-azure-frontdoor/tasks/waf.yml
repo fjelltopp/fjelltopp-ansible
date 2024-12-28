@@ -62,14 +62,13 @@
       - ["Microsoft_DefaultRuleSet", "SQLI", "942380"]
 
 # This can be VERY slow, so we actually check if we need to apply the rule first
-
 - name: Apply WAF Rule Overrides
-  command: >
+  shell: |
     RESULT=$(az network front-door waf-policy managed-rules override list \
       --policy-name {{ waf_policy_name }} \
       --resource-group {{ resource_group_name }} \
       --type {{ item[0] }} \
-      --query "[*].rules[][]")
+      --query "[*].rules[?ruleId=='{{ item[2] }}'][] | [0].enabledState")
 
     echo $RESULT
     # If result is Disabled, we don't need to apply the rule
