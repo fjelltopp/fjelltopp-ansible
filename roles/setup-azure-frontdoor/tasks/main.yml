@@ -10,15 +10,15 @@
   set_fact:
     afd_profile_name: "{{ resource_prefix }}-afd"
 
+- set_fact:
+    waf_policy_name: "{{ alphanumeric_resource_name_prefix | lower }}wafpolicy"
+
 - name: Create Front Door Profile
   command: >
     az afd profile create \
     --profile-name {{ afd_profile_name }} \
     --resource-group {{ resource_group_name }} \
     --sku Premium_AzureFrontDoor
-
-- set_fact:
-    waf_policy_name: "{{ alphanumeric_resource_name_prefix | lower }}wafpolicy"
 
 - name: Create Policy for WAF
   command: >
@@ -90,9 +90,19 @@
       - ["Microsoft_DefaultRuleSet", "SQLI", "942390"]
       - ["Microsoft_DefaultRuleSet", "SQLI", "942380"]
 
-# This is incredibly slow, so we run it async. We can still use and assign the policy before it's finished.
-- name: Apply WAF Rule Overrides
+# Get the rules that are already disabled so we don't try to disable them again
+- name: Get rules status
   command: >
+      az network front-door waf-policy managed-rules override list \
+      --policy-name {{ waf_policy_name }} \
+      --resource-group {{ resource_group_name }} \
+      --type Microsoft_DefaultRuleSet \
+      --query "[*].rules[][].ruleId"
+  register: waf_rules_output
+
+# This is incredibly slow, so only run if we HAVE to
+- name: Apply WAF Rule Overrides
+  shell: >
     az network front-door waf-policy managed-rules override add \
       --disabled \
       --policy-name {{ waf_policy_name }} \
@@ -101,9 +111,7 @@
       --rule-group-id {{ item[1] }} \
       --rule-id {{ item[2] }}
   loop: "{{ azure_waf_rule_overrides + (custom_azure_waf_rule_overrides | default([])) }}"
-  async: 360
-  poll: 0
-  register: async_results
+  when: item[2] not in list_of_rules
 
 - set_fact:
     ckan_endpoint_name: "{{ resource_prefix|lower }}-ckan"
@@ -378,14 +386,3 @@
       --security-policy-name "{{ alphanumeric_resource_name_prefix | lower }}secpolicy" \
       --domains {{ custom_afd_domain_id | ternary(custom_afd_domain_full_id, ckan_endpoint_full_id) }} {{ giftless_endpoint_full_id }} \
       --waf-policy {{ waf_policy_id }}
-
-- name: Check on async WAF # If you don't do this, we'll never know if the async job failed
-  async_status:
-    jid: "{{ async_result_item.ansible_job_id }}"
-  loop: "{{ async_results.results }}"
-  loop_control:
-    loop_var: "async_result_item"
-  register: job_result
-  until: job_result.finished
-  retries: 100
-  delay: 10
