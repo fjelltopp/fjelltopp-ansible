@@ -100,6 +100,9 @@
       --query "[*].rules[][].ruleId"
   register: waf_rules_output
 
+- set_fact:
+    list_of_rules: "{{ waf_rules_output.stdout|from_json }}"
+
 # This is incredibly slow, so only run if we HAVE to
 - name: Apply WAF Rule Overrides
   shell: >
