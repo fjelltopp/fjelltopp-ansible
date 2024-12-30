@@ -152,6 +152,12 @@ resource frontdoorwebapplicationfirewallpolicies_wafpolicy_name_resource 'Micros
                   action: 'AnomalyScoring'
                   exclusions: []
                 }
+                {
+                  ruleId: '920120'
+                  enabledState: 'Disabled'
+                  action: 'AnomalyScoring'
+                  exclusions: []
+                }
               ]
               exclusions: []
             }
