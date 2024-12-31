@@ -42,6 +42,17 @@ resource frontdoorwebapplicationfirewallpolicies_wafpolicy_name_resource 'Micros
           ruleSetAction: 'Block'
           ruleGroupOverrides: [
             {
+              ruleGroupName: 'PROTOCOL-ENFORCEMENT'
+              rules: [
+                {
+                  ruleId: '920120'
+                  enabledState: 'Disabled'
+                  action: 'AnomalyScoring'
+                  exclusions: []
+                }
+              ]
+            }
+            {
               ruleGroupName: 'SQLI'
               rules: [
                 {
@@ -148,12 +159,6 @@ resource frontdoorwebapplicationfirewallpolicies_wafpolicy_name_resource 'Micros
                 }
                 {
                   ruleId: '942380'
-                  enabledState: 'Disabled'
-                  action: 'AnomalyScoring'
-                  exclusions: []
-                }
-                {
-                  ruleId: '920120'
                   enabledState: 'Disabled'
                   action: 'AnomalyScoring'
                   exclusions: []
