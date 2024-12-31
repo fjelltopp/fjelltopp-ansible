@@ -61,7 +61,7 @@
       --name BrowserStaticAssetCaching
 
 - set_fact:
-    asset_extensions: ['js', 'css', 'woff', 'svg', 'jpg', 'woff2']
+    asset_extensions: ['js', 'css', 'woff', 'svg', 'jpg', 'woff2', 'jpeg', 'png']
 
 - name: Create Rule for caching resources in the browser
   command: >
