@@ -249,6 +249,8 @@
     --enabled-state Enabled \
     --supported-protocols Https \
     --https-redirect Enabled \
+    --enable-caching \
+    --enable-compression \
     --forwarding-protocol HttpOnly \
     --rule-sets BrowserStaticAssetCaching \
     {{ custom_afd_domain_id | ternary('--custom-domains ' + custom_afd_domain_id, '--link-to-default-domain Enabled') }}
@@ -266,6 +268,8 @@
     --supported-protocols Https \
     --link-to-default-domain Enabled \
     --https-redirect Enabled \
+    --enable-caching \
+    --enable-compression \
     --forwarding-protocol HttpOnly \
     --rule-sets giftlesscors
 
