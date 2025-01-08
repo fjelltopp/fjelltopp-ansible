@@ -16,7 +16,7 @@ spec:
             args:
               - "echo -e '\nSending Email notifications...\n';
                  curl -rl -X POST -H 'Authorization: {{ ckan_admin_api_token }}' {{ ckan_site_url }}/api/action/send_email_notifications;
-                 echo -e '\nSending phone notifications...\n';
+                 echo -e '\n\nSending phone notifications...\n';
                  curl -rl -X POST -H 'Authorization: {{ ckan_admin_api_token }}' {{ ckan_site_url }}/api/action/send_phone_notifications;"
           restartPolicy: Never
 
