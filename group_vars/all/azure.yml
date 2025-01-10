@@ -25,17 +25,18 @@ resource_prefix: "{{application_name}}-{{resource_group_environment}}"
 resource_group_name: "{{resource_prefix}}-{{resource_group_region}}-RG01"
 node_group_name: "{{resource_prefix}}-{{resource_group_region}}-RGMC"
 
-acr_name: "{{application_name|lower}}{{resource_group_environment}}acr"
-vault_name: "{{application_name|lower}}{{resource_group_environment}}vault"
-storage_account_name: "{{application_name|lower}}{{resource_group_environment|lower}}sta"
+alphanumeric_resource_name_prefix: "{{application_name|lower}}{{resource_group_environment}}"
+
+acr_name: "{{alphanumeric_resource_name_prefix}}acr"
+vault_name: "{{alphanumeric_resource_name_prefix}}vault"
+storage_account_name: "{{alphanumeric_resource_name_prefix|lower}}sta"
 
 # Names for the private link services between K8S and Front Door
 ckan_pls_name: ckan-pls
 giftless_pls_name: giftless-pls
 
-ckan_superuser_name: "superuser"  
+ckan_superuser_name: "superuser"
 ckan_superuser_email: "super@example.com"
 
 # This is an azure object ID that will have access to the KeyVault. It should be the object ID of the service principal that is used to run the ansible scripts
 vault_object_id: 000000-0000-000-0000
-
