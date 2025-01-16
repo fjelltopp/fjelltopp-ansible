@@ -107,7 +107,7 @@
   become: false
   with_items:
     - ckandb_job.yaml
-  when: (fjelltopp_env_type != 'local') or (ckan_datapusher_enable == 'true')
+  when: (fjelltopp_env_type != 'local')
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
