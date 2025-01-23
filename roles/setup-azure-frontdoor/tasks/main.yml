@@ -53,6 +53,31 @@
 - set_fact:
     ckan_hostname: "https://{{ (ckan_endpoint_output.stdout|from_json).hostName }}"
 
+- name: Create Ruleset for caching resources in the browswer
+  command: >
+    az afd rule-set create \
+      --resource-group {{ resource_group_name }} \
+      --profile-name {{ afd_profile_name }} \
+      --name BrowserStaticAssetCaching
+
+- set_fact:
+    asset_extensions: ['js', 'css', 'woff', 'svg', 'jpg', 'woff2', 'jpeg', 'png']
+
+- name: Create Rule for caching resources in the browser
+  command: >
+    az afd rule create \
+      --resource-group {{ resource_group_name }} \
+      --rule-set-name BrowserStaticAssetCaching \
+      --profile-name {{ afd_profile_name }} \
+      --rule-name staticassets \
+      --match-variable UrlFileExtension \
+      --operator Equal \
+      --match-values {{ asset_extensions | join(' ') }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Cache-Control \
+      --header-value 'public, max-age=604800'
+
 - name: Add a ruleset to set CORS headers for Giftless
   command: >
      az afd rule-set create \
@@ -224,7 +249,10 @@
     --enabled-state Enabled \
     --supported-protocols Https \
     --https-redirect Enabled \
+    --enable-caching \
+    --enable-compression \
     --forwarding-protocol HttpOnly \
+    --rule-sets BrowserStaticAssetCaching \
     {{ custom_afd_domain_id | ternary('--custom-domains ' + custom_afd_domain_id, '--link-to-default-domain Enabled') }}
 
 - name: Create route for Giftless
@@ -240,6 +268,8 @@
     --supported-protocols Https \
     --link-to-default-domain Enabled \
     --https-redirect Enabled \
+    --enable-caching \
+    --enable-compression \
     --forwarding-protocol HttpOnly \
     --rule-sets giftlesscors
 
