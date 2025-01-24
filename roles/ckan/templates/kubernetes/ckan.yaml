@@ -9,9 +9,11 @@ data:
   jwt-rs256.key.pub: "{{ ckan_jwt_public_key|string | b64encode  }}"
   ckan-uwsgi.ini: "{{ lookup('template', 'templates/ckan/ckan-uwsgi.ini') | b64encode }}"
   wsgi.py: "{{ lookup('template', 'templates/ckan/wsgi.py') | b64encode }}"
+  saml_idp.crt: "{{ ckan_saml_idp_cert | b64encode }}"
 {% if ckan_googleanalytics_enable %}
   google_analytics_credentials.json: "{{ ckan_googleanalytics_credentials | b64encode }}"
 {% endif %}
+
 type: Opaque
 
 {% if fjelltopp_env_type == 'local' %}
@@ -153,13 +155,8 @@ spec:
 {% if fjelltopp_cloud_provider != 'azure' %}
             - name: AWS_DEFAULT_REGION
               value: "{{ aws_region }}"
-            - name: CKAN_SAML_IDP_CERT
-              value: |-
-                {{ ckan_saml_idp_cert }}
 {% endif %}
 {% if fjelltopp_env_type == 'local' %}
-            - name: CKAN_SAML_IDP_CERT
-              value: "{{ ckan_saml_idp_cert }}"
             - name: HOME
               value: "/usr/lib/ckan"
 {% endif %}
