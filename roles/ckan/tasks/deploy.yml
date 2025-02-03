@@ -10,6 +10,7 @@
 
 - set_fact:
     storageClassName: "efs-client"
+
 - name: obtain ACM certficate info
   community.aws.aws_acm_info:
     aws_region: "{{ aws_region }}"
@@ -74,19 +75,19 @@
     - db.yaml
   when: fjelltopp_env_type == 'local'
 
-# - name: Check if DB is alive [local] (10 tries, 5sec interval)
-#   community.postgresql.postgresql_ping:
-#     db: ckan
-#     login_host: "{{ ckan_fqdn }}"
-#     login_user: "{{ rds_admin_username }}"
-#     login_password: "{{ ckan_postgres_password }}"
-#   when: (fjelltopp_env_type == 'local')
-#   register: db_ping_result
-#   retries: 10
-#   delay: 5
-#   until: db_ping_result is defined and db_ping_result.get('is_available')
-#   failed_when: db_ping_result is not defined or not db_ping_result.is_available
-#   # For this check to work psycopg2 must be installed for the venv python referenced from your inventory
+- name: Check if DB is alive [local] (10 tries, 5sec interval)
+  community.postgresql.postgresql_ping:
+    db: ckan
+    login_host: "{{ ckan_fqdn }}"
+    login_user: "ckan"
+    login_password: "{{ ckan_postgres_password }}"
+  when: (fjelltopp_env_type == 'local')
+  register: db_ping_result
+  retries: 10
+  delay: 5
+  until: db_ping_result is defined and db_ping_result.get('is_available')
+  failed_when: db_ping_result is not defined or not db_ping_result.is_available
+  # For this check to work psycopg2 must be installed for the venv python referenced from your inventory
 
 - name: Setup database parameters
   set_fact:
@@ -106,7 +107,7 @@
   become: false
   with_items:
     - ckandb_job.yaml
-  when: (fjelltopp_env_type != 'local') or (ckan_datapusher_enable == 'true')
+  when: (fjelltopp_env_type != 'local')
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
