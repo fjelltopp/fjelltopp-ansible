@@ -1,13 +1,16 @@
 ---
 - name: Load default variables
   include_vars: secrets.yml
-  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure'
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem'  # TODO tidy and make it == aws
 
 - include_tasks: ./secrets.yml
-  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure'
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem'
 
 - include_tasks: ./azure-secrets.yml
-  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'azure'
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'azure' and fjelltopp_cloud_provider != 'onprem'
+
+- include_tasks: ./onprem-secrets.yml
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider == 'onprem'
 
 - include_role:
     name: k8s-context
@@ -17,4 +20,7 @@
   when: fjelltopp_cloud_provider == 'azure'
 
 - include_tasks: ./deploy.yml
-  when: fjelltopp_cloud_provider != 'azure'
+  when: fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem'
+
+- include_tasks: ./onprem-deploy.yml
+  when: fjelltopp_cloud_provider == 'onprem'
