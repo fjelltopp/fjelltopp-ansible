@@ -21,10 +21,10 @@
     k8s_yaml:
       # - ckandb_job.yaml
       # - shell.yml # only for dev
-      # - solr.yaml
+      - solr.yaml
       # - datapusher.yaml
       - redis.yaml
-      # - giftless.yaml
+      - giftless.yaml
       # - ckan_volumes.yaml
       # - ckan.yaml
       # - ckan_ingress.yaml
