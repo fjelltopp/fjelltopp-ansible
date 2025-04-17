@@ -1,10 +1,10 @@
 ---
 - set_fact:
     db_fqdn: "{{ ckan_db_hostname }}"
-    ckan_sqlalchemy_url: "postgresql://{{ ckan_postgres_user }}:{{ ckan_postgres_password }}@{{ db_fqdn }}/ckan"
+    ckan_sqlalchemy_url: "postgresql://{{ ckan_postgres_user }}:{{ ckan_postgres_password }}@{{ ckan_db_hostname }}/ckan"
     disk_prefix: NOT_SET
-    ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ db_fqdn }}/datastore"
-    ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ db_fqdn }}/datastore"
+    ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ ckan_db_hostname }}/datastore"
+    ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ ckan_db_hostname }}/datastore"
 
 # We list the files we want to process here, so we can template them
 - name: Set list of k8s yaml files to process
@@ -40,5 +40,5 @@
 
 - name: Clean up templated files
   command: >
-    rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+    rm "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
   with_items: "{{ k8s_yaml }}"
