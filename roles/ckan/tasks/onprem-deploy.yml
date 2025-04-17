@@ -31,16 +31,17 @@
       # - ckan_cronjob.yaml
 
 # Look up the files, defaulting to the cloud provider specific version, falling back to a generic version
-# - name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command
-#   template:
-#     src: "{{ lookup('first_found', 'templates/kubernetes/onprem/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
-#     dest: "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
-#   with_items: "{{ k8s_yaml }}"
+- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command
+  template:
+    src: "{{ lookup('first_found', 'templates/kubernetes/onprem/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
+    dest: "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"
+
 
 - name: Deploy CKAN
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('first_found', 'templates/kubernetes/onprem/{{ item }}', 'templates/kubernetes/{{ item }}') | from_yaml_all|list  }}"
+    definition: "{{ lookup('first_found', 'templates/kubernetes/onprem/out/{{ item }}')  | from_yaml_all|list  }}"
     namespace: "{{ application_namespace }}"
     kubeconfig: "{{ kubeconfig }}"
   become: false
