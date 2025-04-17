@@ -19,7 +19,7 @@
 - name: Set list of k8s yaml files to process
   set_fact:
     k8s_yaml:
-      # - ckandb_job.yaml
+      - ckandb_job.yaml
       # - shell.yml # only for dev
       - solr.yaml
       # - datapusher.yaml
