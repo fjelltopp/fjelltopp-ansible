@@ -41,13 +41,15 @@
 - name: Deploy CKAN
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    definition: "{{ lookup('first_found', 'templates/kubernetes/onprem/out/{{ item }}') }}"
     namespace: "{{ application_namespace }}"
     kubeconfig: "{{ kubeconfig }}"
   become: false
   with_items: "{{ k8s_yaml }}"
 
-- name: Clean up templated files
-  command: >
-    rm "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
-  with_items: "{{ k8s_yaml }}"
+
+# Keep for debug for now
+# - name: Clean up templated files
+#   command: >
+#     rm "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
+#   with_items: "{{ k8s_yaml }}"
