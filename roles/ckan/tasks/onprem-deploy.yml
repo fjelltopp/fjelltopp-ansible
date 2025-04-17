@@ -25,7 +25,7 @@
 - name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command
   template:
     src: "{{ lookup('first_found', 'templates/kubernetes/onprem/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
-    dest: "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+    dest: "{{role_path}}/templates/kubernetes/onprem/out/{{ item }}"
   with_items: "{{ k8s_yaml }}"
 
 # This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
