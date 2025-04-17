@@ -25,7 +25,7 @@
       # - datapusher.yaml
       - redis.yaml
       - giftless.yaml
-      # - ckan_volumes.yaml
+      - ckan_volumes.yaml
       # - ckan.yaml
       # - ckan_ingress.yaml
       # - ckan_cronjob.yaml
