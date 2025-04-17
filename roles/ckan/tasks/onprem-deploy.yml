@@ -6,6 +6,15 @@
     ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ ckan_db_hostname }}/datastore"
     ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ ckan_db_hostname }}/datastore"
 
+- name: Create CKAN namespace
+  kubernetes.core.k8s:
+    name: "{{ application_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+
 # We list the files we want to process here, so we can template them
 - name: Set list of k8s yaml files to process
   set_fact:
