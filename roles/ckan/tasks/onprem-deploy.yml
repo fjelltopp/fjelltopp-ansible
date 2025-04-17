@@ -1,0 +1,44 @@
+---
+- set_fact:
+    db_fqdn: "{{ ckan_db_hostname }}"
+    ckan_sqlalchemy_url: "postgresql://{{ ckan_postgres_user }}:{{ ckan_postgres_password }}@{{ db_fqdn }}/ckan"
+    disk_prefix: NOT_SET
+    ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ db_fqdn }}/datastore"
+    ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ db_fqdn }}/datastore"
+
+# We list the files we want to process here, so we can template them
+- name: Set list of k8s yaml files to process
+  set_fact:
+    k8s_yaml:
+      # - ckandb_job.yaml
+      # - shell.yml # only for dev
+      # - solr.yaml
+      # - datapusher.yaml
+      - redis.yaml
+      # - giftless.yaml
+      # - ckan_volumes.yaml
+      # - ckan.yaml
+      # - ckan_ingress.yaml
+      # - ckan_cronjob.yaml
+
+# Look up the files, defaulting to the cloud provider specific version, falling back to a generic version
+- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command
+  template:
+    src: "{{ lookup('first_found', 'templates/kubernetes/onprem/{{ item }}', 'templates/kubernetes/{{ item }}') }}"
+    dest: "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"
+
+# This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
+- name: Deploy CKAN
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items: "{{ k8s_yaml }}"
+
+- name: Clean up templated files
+  command: >
+    rm "{{role_path}}/templates/kubernetes/aks/out/{{ item }}"
+  with_items: "{{ k8s_yaml }}"
