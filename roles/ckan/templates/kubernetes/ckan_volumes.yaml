@@ -1,19 +1,3 @@
-# Setup Azure Storage Class
-{% if fjelltopp_cloud_provider == 'azure' %}
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:  
-  name: "{{ storage_class_name }}"
-provisioner: blob.csi.azure.com
-volumeBindingMode: Immediate
-allowVolumeExpansion: true
-mountOptions:
-  - uid=900
-  - gid=900
-{% endif %}
-
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,11 +7,9 @@ metadata:
   labels:
     app: ckan
 spec:
-{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
-{% endif %}  
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -40,11 +22,9 @@ metadata:
     app: ckan
   name: ckan-webassets
 spec:
-{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
-{% endif %}  
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -58,52 +38,10 @@ metadata:
     app: ckan
   name: ckan-resources
 spec:
-{% if fjelltopp_env_type != 'local' %}  
   storageClassName: "{{ storage_class_name }}"
-{% endif %} 
-  accessModes:
-    - "{{ (fjelltopp_cloud_provider == 'azure') | ternary('ReadWriteMany', 'ReadWriteOnce') }}"
-  resources:
-    requests:
-      storage: "{{ (fjelltopp_cloud_provider == 'azure') | ternary('1Gi', '100Mi') }}"
-status: {}
-
-# Local Only Volumes
-{% if fjelltopp_env_type == 'local' %}
----
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: localckan
-  labels:
-    app: ckan
-spec:
-  storageClassName: standard
-  claimRef:
-    name: localckan
-    namespace: {{ application_namespace }}
-  accessModes:
-    - ReadWriteMany
-  capacity:
-    storage: 20Gi
-  hostPath:
-    path: /minikube-host/
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  creationTimestamp: null
-  labels:
-    app: ckan
-  name: localckan
-spec:
-  storageClassName: standard
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
-  volumeName: localckan
+      storage: 100Mi
 status: {}
-{% endif %}

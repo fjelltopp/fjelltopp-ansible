@@ -41,7 +41,7 @@
 - name: Deploy CKAN
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('first_found', 'templates/kubernetes/onprem/out/{{ item }}')  | from_yaml_all|list  }}"
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
     namespace: "{{ application_namespace }}"
     kubeconfig: "{{ kubeconfig }}"
   become: false
