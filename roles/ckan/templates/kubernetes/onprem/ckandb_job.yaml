@@ -1,0 +1,49 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ckan-db-bootstrap
+data:
+  ckan_db_bootstrap.sh: "{{ lookup('template', 'templates/ckan/db_init.sh') | b64encode }}"
+  ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init_azure.sql') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: setup-ckan-db-accounts
+spec:
+  backoffLimit: 0
+  # activeDeadlineSeconds: 100
+  template:
+    spec:
+      containers:
+        - env:
+            - name: POSTGRES_HOSTNAME
+              value: "{{ db_fqdn }}"
+            - name: POSTGRES_USER
+              value: "{{ db_admin_username }}"
+            - name: POSTGRES_PASSWORD
+              value: "{{ db_admin_password }}"
+          name: ckan-db-init
+          image: postgres:13
+          command: ['bash', '-c']
+          args:
+            - bash /tmp/ckan_db_bootstrap.sh
+
+          volumeMounts:
+            - mountPath: /tmp/ckan_db_bootstrap.sh
+              name: ckan-db-bootstrap
+              readOnly: true
+              subPath: ckan_db_bootstrap.sh
+            - mountPath: /tmp/ckan_db_bootstrap.sql
+              name: ckan-db-bootstrap
+              readOnly: true
+              subPath: ckan_db_bootstrap.sql
+
+      restartPolicy: Never
+      volumes:
+        - secret:
+            secretName: ckan-db-bootstrap
+          name: ckan-db-bootstrap

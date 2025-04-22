@@ -1,7 +1,7 @@
 ---
 - set_fact:
     db_fqdn: "{{ ckan_db_hostname }}"
-    ckan_sqlalchemy_url: "postgresql://{{ ckan_postgres_user }}:{{ ckan_postgres_password }}@{{ ckan_db_hostname }}/ckan"
+    ckan_sqlalchemy_url: "postgresql://ckan:{{ ckan_postgres_password }}@{{ ckan_db_hostname }}/ckan"
     disk_prefix: NOT_SET
     ckan_datastore_read_url: "postgresql://datastore_ro:{{ ckan_ds_ro_pass }}@{{ ckan_db_hostname }}/datastore"
     ckan_datastore_write_url: "postgresql://datastore:{{ ckan_ds_rw_pass }}@{{ ckan_db_hostname }}/datastore"
