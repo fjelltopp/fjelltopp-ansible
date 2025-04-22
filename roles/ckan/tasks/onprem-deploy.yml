@@ -33,7 +33,7 @@
 - name: Init CKAN schema and CKAN Volumes
   kubernetes.core.k8s:
     state: present
-    definition: "{{ lookup('template', 'templates/kubernetes/onprem{{ item }}') | from_yaml_all|list }}"
+    definition: "{{ lookup('template', 'templates/kubernetes/onprem/{{ item }}') | from_yaml_all|list }}"
     namespace: "{{ application_namespace }}"
     kubeconfig: "{{ kubeconfig }}"
   become: false
