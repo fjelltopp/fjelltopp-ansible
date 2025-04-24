@@ -241,6 +241,7 @@ metadata:
     app: ckan
   name: ckan
 spec:
+  type: NodePort
   ports:
     - name: "ckan"
       port: 5000

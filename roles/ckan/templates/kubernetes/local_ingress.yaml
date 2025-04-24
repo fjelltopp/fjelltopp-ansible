@@ -74,3 +74,18 @@ data:
   5432: "{{ application_namespace }}/db-external:5432"
   6379: "{{ application_namespace }}/redis-external:6379"
   8983: "{{ application_namespace }}/solr-external:8983"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/name: ingress-nginx
+data:
+  allow-snippet-annotations: "true"
