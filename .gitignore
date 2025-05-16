@@ -1,4 +1,4 @@
-roles/ckan/templates/kubernetes/aks/out/*
+roles/ckan/templates/kubernetes/*/out/*
 .venv*
 .idea
 .vscode
