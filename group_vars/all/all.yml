@@ -54,7 +54,6 @@ ckan_site_url: "http://{{ ckan_fqdn }}"
 ckan_image: "ghcr.io/fjelltopp/fjelltopp-base-images/ckan"
 ckan_image_tag: "2.11.0"
 ckan_db_image: "postgres:15"
-ckan_secret_key: "{{ lookup('aws_secret', application_namespace + '_ckan_secret_key' , region = aws_region ) }}"
 
 # ckan_ds_ro_pass: "123456789"
 # ckan_ds_rw_pass: "123456789"
