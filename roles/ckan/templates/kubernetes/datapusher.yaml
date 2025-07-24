@@ -19,6 +19,7 @@ spec:
     spec:
       containers:
         - image: {{ datapusher_image }}
+          imagePullPolicy: IfNotPresent
           name: datapusher
           ports:
             - containerPort: 8800

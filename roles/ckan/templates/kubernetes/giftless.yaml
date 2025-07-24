@@ -74,7 +74,12 @@ spec:
           name: giftless-config
           readOnly: true
           subPath: giftless.yaml
+        - mountPath: /lfs-storage
+          name: giftless-storage
       volumes:
+      - name: giftless-storage
+        persistentVolumeClaim:
+          claimName: giftless-storage
       - secret:
           secretName: jwt-keys
         name: jwt-key-pub

@@ -18,9 +18,10 @@ spec:
         app: redis
     spec:
       containers:
-        - image: redis:latest
+        - image: redis:8.0.3
           name: redis
           resources: {}
+          imagePullPolicy: IfNotPresent
       restartPolicy: Always
 status: {}
 
@@ -40,4 +41,3 @@ spec:
     app: redis
 status:
   loadBalancer: {}
-

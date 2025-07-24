@@ -6,7 +6,7 @@ TRANSFER_ADAPTERS:
       storage_class: giftless.storage.amazon_s3:AmazonS3Storage
       storage_options:
         bucket_name: {{ giftless_s3_bucket }}
-{% elif giftless_azure_blob_string is defined %}        
+{% elif giftless_azure_blob_string is defined %}
       storage_class: giftless.storage.azure:AzureBlobsStorage
       storage_options:
         connection_string: "{{ giftless_azure_blob_string }}"
@@ -25,4 +25,8 @@ MIDDLEWARE:
       x_host: 1
       x_port: 1
       x_prefix: 1
-
+  - class: wsgi_cors_middleware:CorsMiddleware
+    kwargs:
+      origin: {{ ckan_site_url }}
+      headers: ['Content-type', 'Accept', 'Authorization']
+      methods: ['GET', 'POST', 'PUT']

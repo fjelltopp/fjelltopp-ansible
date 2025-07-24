@@ -164,7 +164,7 @@ spec:
               value: "/usr/lib/ckan"
 {% endif %}
           image: {{ ckan_image }}:{{ ckan_image_tag }}
-          imagePullPolicy: {{ (fjelltopp_env_type == 'local') | ternary('IfNotPresent', 'Always') }}
+          imagePullPolicy: IfNotPresent
           name: ckan
 
 # assume local user uid
@@ -222,7 +222,6 @@ spec:
         - name: ckan-resources
           persistentVolumeClaim:
             claimName: ckan-resources
-
 {% if fjelltopp_env_type == 'local' %}
         - name: localckan
           persistentVolumeClaim:

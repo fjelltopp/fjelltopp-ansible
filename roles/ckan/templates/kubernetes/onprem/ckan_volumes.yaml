@@ -2,6 +2,20 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: giftless-storage
+  labels:
+    app: giftless
+spec:
+  storageClassName: "{{ storage_class_name }}"
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
   name: ckan-storage
   creationTimestamp: null
   labels:
