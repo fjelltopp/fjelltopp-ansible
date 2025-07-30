@@ -3,7 +3,7 @@ apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: stripgiftlessprefix
-  namespace: {{ ckan_namespace }}
+  namespace: {{ application_namespace }}
 spec:
   stripPrefix:
     prefixes:
@@ -14,9 +14,9 @@ kind: Ingress
 metadata:
   generation: 1
   name: ckan-ingress
-  namespace: {{ ckan_namespace }}
+  namespace: {{ application_namespace }}
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ ckan_namespace }}-stripgiftlessprefix@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: {{ application_namespace }}-stripgiftlessprefix@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
