@@ -1,7 +1,7 @@
 ---
 - name: Load default variables
   include_vars: secrets.yml
-  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem'  # TODO tidy and make it == aws
+  when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem' # TODO tidy and make it == aws
 
 - include_tasks: ./secrets.yml
   when: fjelltopp_env_type != 'local' and fjelltopp_cloud_provider != 'azure' and fjelltopp_cloud_provider != 'onprem'

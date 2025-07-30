@@ -1,0 +1,38 @@
+# Use this for initial setup of the CKAN instance, and then switch to the TLS once certs etc are ready
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: stripgiftlessprefix
+  namespace: {{ ckan_namespace }}
+spec:
+  stripPrefix:
+    prefixes:
+      - "/giftless"
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  generation: 1
+  name: ckan-ingress
+  namespace: {{ ckan_namespace }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ ckan_namespace }}-stripgiftlessprefix@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: giftless
+            port:
+              number: 5001
+        path: /giftless
+        pathType: Prefix
+      - backend:
+          service:
+            name: ckan
+            port:
+              number: 5000
+        path: /
+        pathType: Prefix
