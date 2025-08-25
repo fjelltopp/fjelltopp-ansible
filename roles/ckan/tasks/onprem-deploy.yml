@@ -27,7 +27,7 @@
       - giftless.yaml
       # - ckan_volumes.yaml
       - ckan.yaml
-      - ckan_ingress.yaml
+      # - ckan_ingress.yaml
       # - ckan_cronjob.yaml
 
 - name: Init CKAN schema and CKAN Volumes
@@ -40,6 +40,7 @@
   with_items:
     - ckandb_job.yaml
     - ckan_volumes.yaml
+    - ckan_ingress.yaml
   when: (fjelltopp_env_type != 'local')
 
 - name: Deploy CKAN
