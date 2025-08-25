@@ -46,8 +46,6 @@ metadata:
   generation: 1
   name: ckan-ingress
   namespace: {{ application_namespace }}
-  annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ application_namespace }}-stripgiftlessprefix@kubernetescrd,{{ application_namespace }}-strip-content-type@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
