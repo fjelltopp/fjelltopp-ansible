@@ -27,7 +27,7 @@
       - giftless.yaml
       # - ckan_volumes.yaml
       - ckan.yaml
-      # - ckan_ingress.yaml
+      - ckan_ingress.yaml
       # - ckan_cronjob.yaml
 
 - name: Init CKAN schema and CKAN Volumes
@@ -50,8 +50,6 @@
     kubeconfig: "{{ kubeconfig }}"
   become: false
   with_items: "{{ k8s_yaml }}"
-
-
 # Keep for debug for now
 # - name: Clean up templated files
 #   command: >
