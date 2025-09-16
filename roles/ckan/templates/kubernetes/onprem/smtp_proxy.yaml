@@ -13,10 +13,10 @@ data:
     Proxy       {{ SMTP_PROXY_ADDRESS }} # inc port
 
     # Listen on all interfaces
-    Listen      0.0.0.0:2525
+    Listen      127.0.0.1:3128
 
     # Allow SMTP
-    Tunnel      2525:{{ SMTP_PROXY_ADDRESS }}
+    Tunnel      3128:{{ SMTP_PROXY_ADDRESS }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,7 +41,7 @@ spec:
             - name: OPTIONS
               value: "-v"
           ports:
-            - containerPort: 2525
+            - containerPort: 3128
           volumeMounts:
             - name: config
               mountPath: /etc/cntlm.conf
@@ -60,4 +60,4 @@ spec:
     app: ntlm-smtp-proxy
   ports:
     - port: 25
-      targetPort: 2525
+      targetPort: 3128
