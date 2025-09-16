@@ -16,7 +16,7 @@ data:
     Listen      0.0.0.0:2525
 
     # Allow SMTP
-    Tunnel      {{ SMTP_PROXY_ADDRESS }}
+    Tunnel      2525:{{ SMTP_PROXY_ADDRESS }}
 ---
 apiVersion: apps/v1
 kind: Deployment
