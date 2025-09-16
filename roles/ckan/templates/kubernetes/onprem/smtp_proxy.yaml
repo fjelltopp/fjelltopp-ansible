@@ -38,6 +38,8 @@ spec:
           env:
             - name: CUSTOM_CONFIG
               value: "true"
+            - name: OPTIONS
+              value: "-v"
           ports:
             - containerPort: 2525
           volumeMounts:
