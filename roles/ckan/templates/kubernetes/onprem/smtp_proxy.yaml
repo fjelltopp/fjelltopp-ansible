@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cntlm-config
+data:
+  cntlm.conf: |
+    Username    {{ SMTP_PROXY_USERNAME }}
+    Domain      {{ SMTP_PROXY_DOMAIN }}
+    # Generate hash with: cntlm -H -u username -d domain
+    PassNTLMv2  {{ SMTP_PROXY_NTLM_HASH }}
+
+    # Exchange server
+    Proxy       {{ SMTP_PROXY_ADDRESS }} # inc port
+
+    # Listen on all interfaces
+    Listen      0.0.0.0:2525
+
+    # Allow SMTP
+    Tunnel      {{ SMTP_PROXY_ADDRESS }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ntlm-smtp-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ntlm-smtp-proxy
+  template:
+    metadata:
+      labels:
+        app: ntlm-smtp-proxy
+    spec:
+      containers:
+        - name: cntlm
+          image: robertdebock/docker-cntlm:latest
+          ports:
+            - containerPort: 2525
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cntlm.conf
+              subPath: cntlm.conf
+      volumes:
+        - name: config
+          configMap:
+            name: cntlm-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smtp-proxy
+spec:
+  selector:
+    app: ntlm-smtp-proxy
+  ports:
+    - port: 25
+      targetPort: 2525
