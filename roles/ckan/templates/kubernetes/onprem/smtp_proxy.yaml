@@ -35,6 +35,9 @@ spec:
       containers:
         - name: cntlm
           image: robertdebock/docker-cntlm:latest
+          env:
+            - name: CUSTOM_CONFIG
+              value: "true"
           ports:
             - containerPort: 2525
           volumeMounts:
