@@ -1,6 +1,19 @@
 apiVersion: v1
 kind: Secret
 metadata:
+  name: ckan-secrets
+type: Opaque
+stringData:
+  CKAN_SQLALCHEMY_URL: "{{ ckan_sqlalchemy_url }}"
+  CKAN_DATASTORE_READ_URL: "{{ ckan_datastore_read_url }}"
+  CKAN_DATASTORE_WRITE_URL: "{{ ckan_datastore_write_url }}"
+  DS_RO_PASS: "{{ ckan_ds_ro_pass }}"
+  POSTGRES_PASSWORD: "{{ ckan_postgres_password }}"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
   name: ckan-configs
 data:
   production.ini: "{{ lookup('template', 'templates/ckan/ckan_production.ini') | b64encode }}"
@@ -58,6 +71,10 @@ spec:
     spec:
       securityContext:
         fsGroup: 900
+{% if fjelltopp_cloud_provider == 'azure' %}
+      imagePullSecrets:
+        - name: acr-secret
+{% endif %}
 
 {% if fjelltopp_env_type == 'local' %}
       initContainers:
@@ -131,9 +148,15 @@ spec:
             - name: CKAN_DATAPUSHER_URL
               value: {{ ckan_datapusher_url }}
             - name: CKAN_DATASTORE_READ_URL
-              value: {{ ckan_datastore_read_url }}
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-secrets
+                  key: CKAN_DATASTORE_READ_URL
             - name: CKAN_DATASTORE_WRITE_URL
-              value: {{ ckan_datastore_write_url }}
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-secrets
+                  key: CKAN_DATASTORE_WRITE_URL
             - name: CKAN_MAX_UPLOAD_SIZE_MB
               value: "{{ ckan_max_upload_size_mb }}"
             - name: CKAN_REDIS_URL
@@ -143,11 +166,20 @@ spec:
             - name: CKAN_SOLR_URL
               value: "{{ ckan_solr_url }}"
             - name: CKAN_SQLALCHEMY_URL
-              value: "{{ ckan_sqlalchemy_url }}"
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-secrets
+                  key: CKAN_SQLALCHEMY_URL
             - name: DS_RO_PASS
-              value: "{{ ckan_ds_ro_pass }}"
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-secrets
+                  key: DS_RO_PASS
             - name: POSTGRES_PASSWORD
-              value: "{{ ckan_postgres_password }}"
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-secrets
+                  key: POSTGRES_PASSWORD
             - name: PIPENV_DONT_LOAD_ENV
               value: "1"
             - name: CKAN_GOOGLEANALYTICS_ENABLED

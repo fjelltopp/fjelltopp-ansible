@@ -1,0 +1,235 @@
+# Per-environment Front Door endpoints, origin groups, origins, and routes
+# Run this after CKAN is deployed (needs LoadBalancer IPs)
+# Requires: application_namespace, env_resource_prefix, resource_group_environment
+
+- name: Get subscription_id
+  command: az account show --query id -o tsv
+  register: subscription_id_output
+  changed_when: false
+
+- name: Set subscription_id fact
+  set_fact:
+    subscription_id: "{{ subscription_id_output.stdout | trim }}"
+
+- name: Get AKS admin credentials
+  command: >
+    az aks get-credentials
+    --resource-group {{ shared_resource_group_name }}
+    --name {{ shared_aks_name }}
+    --admin
+    --file {{ lookup('env', 'HOME') }}/.kube/{{ shared_aks_name }}_config
+    --overwrite-existing
+
+- name: Set kubeconfig path
+  set_fact:
+    kubeconfig: "{{ lookup('env', 'HOME') }}/.kube/{{ shared_aks_name }}_config"
+
+- name: Set naming facts
+  set_fact:
+    afd_profile_name: "{{ shared_afd_profile_name }}"
+    waf_policy_name: "{{ shared_alphanumeric_prefix }}wafpolicy"
+    env_code: "{{ resource_group_environment | lower }}"
+    ckan_endpoint_name: "{{ resource_group_environment | lower }}-ckan"
+    giftless_endpoint_name: "{{ resource_group_environment | lower }}-giftless"
+    ckan_origin_group: "{{ env_resource_prefix }}-og-ckan"
+    giftless_origin_group: "{{ env_resource_prefix }}-og-giftless"
+
+# Create endpoints for this environment
+- name: Create Front Door Endpoint For CKAN
+  command: >
+    az afd endpoint create \
+      --resource-group {{ shared_resource_group_name }} \
+      --profile-name {{ afd_profile_name }} \
+      --endpoint-name {{ ckan_endpoint_name }} \
+      --enabled-state Enabled
+  register: ckan_endpoint_output
+
+- name: Create Front Door Endpoint For Giftless
+  command: >
+    az afd endpoint create \
+      --resource-group {{ shared_resource_group_name }} \
+      --profile-name {{ afd_profile_name }} \
+      --endpoint-name {{ giftless_endpoint_name }} \
+      --enabled-state Enabled
+  register: giftless_endpoint_output
+
+- set_fact:
+    ckan_hostname: "https://{{ (ckan_endpoint_output.stdout|from_json).hostName }}"
+
+# Create origin groups for this environment
+- name: Create Front Door Origin Group (CKAN)
+  command: >
+    az afd origin-group create \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --origin-group-name {{ ckan_origin_group }} \
+    --probe-request-type GET \
+    --probe-protocol Http \
+    --probe-interval-in-seconds 60 \
+    --probe-path / \
+    --sample-size 4 \
+    --successful-samples-required 3 \
+    --additional-latency-in-milliseconds 50
+
+- name: Create Front Door Origin Group (Giftless)
+  command: >
+    az afd origin-group create \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --origin-group-name {{ giftless_origin_group }} \
+    --probe-request-type GET \
+    --probe-protocol Http \
+    --probe-interval-in-seconds 60 \
+    --probe-path / \
+    --sample-size 4 \
+    --successful-samples-required 3 \
+    --additional-latency-in-milliseconds 50
+
+# Get LoadBalancer IPs from deployed services
+- name: Get CKAN service info
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    name: ckan-ingress
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig | default(lookup('env', 'HOME') + '/.kube/' + shared_aks_name + '_config') }}"
+  register: ckan_svc_info
+
+- name: Get Giftless service info
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Service
+    name: giftless
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig | default(lookup('env', 'HOME') + '/.kube/' + shared_aks_name + '_config') }}"
+  register: giftless_svc_info
+
+- name: Set LoadBalancer IPs
+  set_fact:
+    ckan_lb_ip: "{{ ckan_svc_info.resources[0].status.loadBalancer.ingress[0].ip }}"
+    giftless_lb_ip: "{{ giftless_svc_info.resources[0].status.loadBalancer.ingress[0].ip }}"
+
+# Create origins pointing to the LoadBalancer IPs
+- name: Create origin for CKAN
+  command: >
+    az afd origin create \
+    --host-name {{ ckan_lb_ip }} \
+    --origin-host-header {{ ckan_lb_ip }} \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --origin-group-name {{ ckan_origin_group }} \
+    --origin-name {{ env_code }}-ckan-origin \
+    --priority 1 \
+    --weight 1000 \
+    --enabled-state Enabled \
+    --http-port 80 \
+    --https-port 443
+
+- name: Create origin for Giftless
+  command: >
+    az afd origin create \
+    --host-name {{ giftless_lb_ip }} \
+    --origin-host-header {{ giftless_lb_ip }} \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --origin-group-name {{ giftless_origin_group }} \
+    --origin-name {{ env_code }}-giftless-origin \
+    --priority 1 \
+    --weight 1000 \
+    --enabled-state Enabled \
+    --http-port 5001 \
+    --https-port 5001
+
+# Create CORS rule for this environment's CKAN hostname
+- name: CORS Origin header rule for this environment
+  command: >
+    az afd rule create \
+      --resource-group {{ shared_resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{ afd_profile_name }} \
+      --rule-name corsheaders{{ env_code }} \
+      --selector Origin \
+      --match-variable RequestHeader \
+      --operator Equal \
+      --match-values {{ ckan_hostname }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Origin \
+      --header-value {{ ckan_hostname }}
+
+- name: Add CORS Headers header to rule
+  command: >
+    az afd rule action add --resource-group {{ shared_resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{ afd_profile_name }} \
+      --rule-name corsheaders{{ env_code }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Headers \
+      --header-value '*'
+
+- name: Add CORS Method header to rule
+  command: >
+    az afd rule action add --resource-group {{ shared_resource_group_name }} \
+      --rule-set-name giftlesscors \
+      --profile-name {{ afd_profile_name }} \
+      --rule-name corsheaders{{ env_code }} \
+      --action-name ModifyResponseHeader \
+      --header-action Overwrite \
+      --header-name Access-Control-Allow-Methods \
+      --header-value '*'
+
+# Create routes
+- name: Create route for CKAN
+  command: >
+    az afd route create \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --route-name {{ env_code }}-ckan-route \
+    --endpoint-name {{ ckan_endpoint_name }} \
+    --patterns '/*' \
+    --origin-group {{ ckan_origin_group }} \
+    --enabled-state Enabled \
+    --supported-protocols Https \
+    --https-redirect Enabled \
+    --enable-caching \
+    --query-string-caching-behavior IgnoreQueryString \
+    --enable-compression \
+    --forwarding-protocol HttpOnly \
+    --rule-sets BrowserStaticAssetCaching \
+    --link-to-default-domain Enabled
+
+- name: Create route for Giftless
+  command: >
+    az afd route create \
+    --resource-group {{ shared_resource_group_name }} \
+    --profile-name {{ afd_profile_name }} \
+    --route-name {{ env_code }}-giftless-route \
+    --endpoint-name {{ giftless_endpoint_name }} \
+    --patterns '/*' \
+    --origin-group {{ giftless_origin_group }} \
+    --enabled-state Enabled \
+    --supported-protocols Https \
+    --link-to-default-domain Enabled \
+    --https-redirect Enabled \
+    --enable-caching \
+    --query-string-caching-behavior IgnoreQueryString \
+    --enable-compression \
+    --forwarding-protocol HttpOnly \
+    --rule-sets giftlesscors
+
+# Apply WAF policy to this environment's endpoints
+- set_fact:
+    ckan_endpoint_full_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ ckan_endpoint_name }}"
+    giftless_endpoint_full_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ giftless_endpoint_name }}"
+    waf_policy_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Network/frontDoorWebApplicationFirewallPolicies/{{ waf_policy_name }}"
+
+- name: Apply WAF policy to endpoints
+  command: >
+    az afd security-policy create \
+      --resource-group {{ shared_resource_group_name }} \
+      --profile-name {{ afd_profile_name }} \
+      --security-policy-name "{{ env_code }}secpolicy" \
+      --domains {{ ckan_endpoint_full_id }} {{ giftless_endpoint_full_id }} \
+      --waf-policy {{ waf_policy_id }}
+  ignore_errors: true  # May need to update instead of create

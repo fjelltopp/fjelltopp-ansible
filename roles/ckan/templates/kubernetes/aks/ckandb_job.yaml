@@ -3,10 +3,12 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: ckan-db-bootstrap
+type: Opaque
 data:
   ckan_db_bootstrap.sh: "{{ lookup('template', 'templates/ckan/db_init.sh') | b64encode }}"
   ckan_db_bootstrap.sql: "{{ lookup('template', 'templates/ckan/db_init_azure.sql') | b64encode }}"
-type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "{{ azure_db_admin_password }}"
 
 ---
 apiVersion: batch/v1
@@ -15,7 +17,6 @@ metadata:
   name: setup-ckan-db-accounts
 spec:
   backoffLimit: 0
-  # activeDeadlineSeconds: 100
   template:
     spec:
       containers:
@@ -25,7 +26,10 @@ spec:
             - name: POSTGRES_USER
               value: "{{ azure_db_admin_username }}"
             - name: POSTGRES_PASSWORD
-              value: "{{ azure_db_admin_password }}"
+              valueFrom:
+                secretKeyRef:
+                  name: ckan-db-bootstrap
+                  key: POSTGRES_PASSWORD
           name: ckan-db-init
           image: postgres:13
           command: ['bash', '-c']

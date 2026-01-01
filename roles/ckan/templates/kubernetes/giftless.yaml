@@ -36,6 +36,10 @@ spec:
       labels:
         app: giftless
     spec:
+{% if fjelltopp_cloud_provider == 'azure' %}
+      imagePullSecrets:
+        - name: acr-secret
+{% endif %}
       containers:
       - command:
         - uwsgi
@@ -93,15 +97,7 @@ metadata:
     service.beta.kubernetes.io/aws-load-balancer-ssl-cert: {{ certificate_acm.certificates[0].certificate_arn }}
     service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "giftless-http"
 {% endif %}
-{% if giftless_azure_blob_string is defined %}
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
-    service.beta.kubernetes.io/azure-pls-create: "true"
-    service.beta.kubernetes.io/azure-pls-name: "{{ giftless_pls_name }}"
-    service.beta.kubernetes.io/azure-pls-ip-configuration-ip-address-count: "1"
-    service.beta.kubernetes.io/azure-pls-proxy-protocol: "false"
-    service.beta.kubernetes.io/azure-pls-visibility: "*"
-{% endif %}
+{# Azure: public LoadBalancer, no PLS needed #}
 spec:
 {% if giftless_azure_blob_string is defined %}
   type: LoadBalancer

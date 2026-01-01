@@ -1,26 +1,35 @@
-- name: Install Datadog Operator
-  shell: |
-    az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
-    --command "helm repo add datadog https://helm.datadoghq.com && helm repo update && helm install datadog-operator datadog/datadog-operator" \
-
-    az aks command invoke --resource-group {{ resource_group_name }} --name {{resource_prefix}}-aks \
-    --command "kubectl create secret generic datadog-secret --from-literal api-key={{ datadog_api_key}}" \
+- name: Add Datadog Helm repo
+  kubernetes.core.helm_repository:
+    name: datadog
+    repo_url: https://helm.datadoghq.com
   when: datadog_api_key is defined
 
-- name: Templates k8s files # Is there a better way to do this? it would happen automatically if the file _contents_ were piped to the az/kubectl command  
-  template:
-    src: "{{role_path}}/kubernetes/datadog-agent.yaml"
-    dest: "{{role_path}}/kubernetes/datadog-agent.out.yaml"
+- name: Install Datadog Operator
+  kubernetes.core.helm:
+    name: datadog-operator
+    chart_ref: datadog/datadog-operator
+    release_namespace: default
+    kubeconfig: "{{ kubeconfig | default(lookup('env', 'HOME') + '/.kube/config') }}"
+  when: datadog_api_key is defined
 
-# This is nice as it only requires Azure Auth, rather than any network access to the cluster. A private endpoint etc _might_ be better tho?
+- name: Create Datadog secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: datadog-secret
+        namespace: default
+      type: Opaque
+      stringData:
+        api-key: "{{ datadog_api_key }}"
+    kubeconfig: "{{ kubeconfig | default(lookup('env', 'HOME') + '/.kube/config') }}"
+  when: datadog_api_key is defined
+
 - name: Deploy Datadog Agent
-  command: >
-    az aks command invoke \
-    --resource-group {{ resource_group_name }} 
-    --name {{resource_prefix}}-aks \
-    --command "kubectl apply -f datadog-agent.out.yaml" \
-    --file "{{role_path}}/kubernetes/datadog-agent.out.yaml"
-
-- name: Clean up templated files
-  command: >
-    rm "{{role_path}}/kubernetes/datadog-agent.out.yaml"
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'kubernetes/datadog-agent.yaml') | from_yaml_all | list }}"
+    kubeconfig: "{{ kubeconfig | default(lookup('env', 'HOME') + '/.kube/config') }}"
+  when: datadog_api_key is defined

@@ -17,6 +17,10 @@ spec:
       labels:
         app: datapusher
     spec:
+{% if fjelltopp_cloud_provider == 'azure' %}
+      imagePullSecrets:
+        - name: acr-secret
+{% endif %}
       containers:
         - image: {{ datapusher_image }}
           name: datapusher

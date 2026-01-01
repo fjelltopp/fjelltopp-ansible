@@ -1,87 +1,167 @@
+# Per-environment database setup
+# Creates DB VNet, peers to shared AKS VNet, creates Postgres Flexible Server
+
+- name: Get subscription ID
+  command: az account show --query id -o tsv
+  register: subscription_id_output
+  changed_when: false
+
+- name: Set subscription_id fact
+  set_fact:
+    subscription_id: "{{ subscription_id_output.stdout | trim }}"
+
+- name: Get DB admin password from Key Vault
+  command: >
+    az keyvault secret show
+    --vault-name {{ shared_vault_name }}
+    --name azure-db-admin-password
+    --query value -o tsv
+  register: db_password_result
+  changed_when: false
+
+- name: Set DB password fact
+  set_fact:
+    azure_db_admin_password: "{{ db_password_result.stdout | trim }}"
+
 - name: Create Virtual Network for Postgres DB
   azure_rm_virtualnetwork:
-    resource_group: "{{ resource_group_name }}"
-    name: "{{resource_prefix}}-v-net-db"
+    resource_group: "{{ shared_resource_group_name }}"
+    name: "{{ env_db_vnet_name }}"
     address_prefixes_cidr:
-      - "{{db_vpc_cidr_block}}"
+      - "{{ db_vpc_cidr_block }}"
   register: vnet_output
-    
+
 - name: Create a subnet for DB
   azure_rm_subnet:
-    resource_group: "{{ resource_group_name }}"
-    virtual_network_name: "{{resource_prefix}}-v-net-db"
+    resource_group: "{{ shared_resource_group_name }}"
+    virtual_network_name: "{{ env_db_vnet_name }}"
     name: sb_internal_01_db
-    address_prefix_cidr: "{{db_vpc_cidr_subnet}}"
-    private_endpoint_network_policies: "Disabled" # https://learn.microsoft.com/en-us/azure/private-link/disable-private-link-service-network-policy?tabs=private-link-network-policy-cli
+    address_prefix_cidr: "{{ db_vpc_cidr_subnet }}"
+    private_endpoint_network_policies: "Disabled"
+    delegations:
+      - name: postgres-delegation
+        serviceName: Microsoft.DBforPostgreSQL/flexibleServers
     private_link_service_network_policies: "Disabled"
     state: present
   register: subnet_output
 
-- name: Create virtual network peering
+- name: Create virtual network peering (DB to AKS)
   azure_rm_virtualnetworkpeering:
-    resource_group: "{{ resource_group_name }}"
-    virtual_network: "{{resource_prefix}}-v-net-db"
-    name: "{{resource_prefix}}-peering-db-to-aks"
+    resource_group: "{{ shared_resource_group_name }}"
+    virtual_network: "{{ env_db_vnet_name }}"
+    name: "{{ env_resource_prefix }}-peering-db-to-aks"
     remote_virtual_network:
-      resource_group: "{{ resource_group_name }}"
-      name: "{{resource_prefix}}-v-net"
+      resource_group: "{{ shared_resource_group_name }}"
+      name: "{{ shared_vnet_name }}"
     allow_virtual_network_access: true
     allow_forwarded_traffic: false
     state: present
 
-- name: Create reverse virtual network peering
+- name: Create reverse virtual network peering (AKS to DB)
   azure_rm_virtualnetworkpeering:
-    resource_group: "{{ resource_group_name }}"
-    virtual_network: "{{resource_prefix}}-v-net"
-    name: "{{resource_prefix}}-peering-aks-to-db"
+    resource_group: "{{ shared_resource_group_name }}"
+    virtual_network: "{{ shared_vnet_name }}"
+    name: "{{ env_resource_prefix }}-peering-aks-to-db"
     remote_virtual_network:
-      resource_group: "{{ resource_group_name }}"
-      name: "{{resource_prefix}}-v-net-db"
+      resource_group: "{{ shared_resource_group_name }}"
+      name: "{{ env_db_vnet_name }}"
     allow_virtual_network_access: true
     allow_forwarded_traffic: false
     state: present
 
-# Check if the DB exists, as create will fail if it exists. The create command WON'T update the existing DB, so any changes to the DB need to be applied in a different way.
-# Once this whole part is transformed to ansible native, it will be...better
-# _most_ az create commands are idempotent, but https://github.com/Azure/azure-cli/issues/26770 ¯\_(ツ)_/¯
+# Create private DNS zone for Postgres
+- name: Create private DNS zone for Postgres
+  command: >
+    az network private-dns zone create
+    --resource-group {{ shared_resource_group_name }}
+    --name {{ env_db_server_name }}.private.postgres.database.azure.com
+  register: dns_zone
+  failed_when: dns_zone.rc != 0 and 'exists already' not in dns_zone.stderr
+
+# Link DNS zone to DB VNet
+- name: Link DNS zone to DB VNet
+  command: >
+    az network private-dns link vnet create
+    --resource-group {{ shared_resource_group_name }}
+    --zone-name {{ env_db_server_name }}.private.postgres.database.azure.com
+    --name db-vnet-link
+    --virtual-network {{ env_db_vnet_name }}
+    --registration-enabled false
+  register: dns_link
+  failed_when: dns_link.rc != 0 and 'exists already' not in dns_link.stderr and 'already exists' not in dns_link.stderr
+
+# Check if the DB exists
 - name: Check if db exists
   command: >
-    az postgres flexible-server show \
-      --resource-group {{ resource_group_name }} \
-      --name "{{ db_server_name }}"
-  register: result
-  ignore_errors: true
+    az postgres flexible-server show
+    --resource-group {{ shared_resource_group_name }}
+    --name {{ env_db_server_name }}
+    --query name -o tsv
+  register: db_check
+  failed_when: false
+  changed_when: false
 
-# azure.azcollection.azure_rm_postgresqlserver creates a single instance which Azure is retiring March 2025. 
-# Ansible will support flexible server when https://github.com/ansible-collections/azure/issues/714 ships. 
-# For now, do it the hard way
+# Create Postgres Flexible Server using azure_rm_resource
 - name: Create Postgres flexible server
-  when: result is failed
+  azure_rm_resource:
+    url: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ shared_resource_group_name }}/providers/Microsoft.DBforPostgreSQL/flexibleServers/{{ env_db_server_name }}"
+    api_version: "2022-12-01"
+    method: PUT
+    body:
+      location: "{{ azure_region }}"
+      sku:
+        name: Standard_B2s
+        tier: Burstable
+      properties:
+        version: "13"
+        administratorLogin: "{{ azure_db_admin_username }}"
+        administratorLoginPassword: "{{ azure_db_admin_password }}"
+        storage:
+          storageSizeGB: "{{ azure_db_allocated_storage }}"
+        backup:
+          backupRetentionDays: "{{ azure_db_backup_retention_period }}"
+        network:
+          delegatedSubnetResourceId: "{{ subnet_output.state.id }}"
+          privateDnsZoneArmResourceId: "/subscriptions/{{ subscription_id }}/resourceGroups/{{ shared_resource_group_name }}/providers/Microsoft.Network/privateDnsZones/{{ env_db_server_name }}.private.postgres.database.azure.com"
+  register: db_create_result
+
+# Wait for server to be ready before creating database
+- name: Wait for Postgres server to be ready
   command: >
-    az postgres flexible-server create \
-      --resource-group {{ resource_group_name }} \
-      --admin-password "{{ azure_db_admin_password }}" \
-      --admin-user "{{ azure_db_admin_username }}" \
-      --backup-retention "{{ azure_db_backup_retention_period }}" \
-      --database-name ckan \
-      --name "{{ db_server_name }}"
-      --sku-name Standard_B2s
-      --storage-size "{{ azure_db_allocated_storage }}" \
-      --tier Burstable \
-      --version "13" \
-      --vnet {{resource_prefix}}-v-net-db \
-      --subnet sb_internal_01_db \
-      --yes
-  
-  # Connect the DB database zone with the AKS subnet so it can resolve it
-- name: Create DNS Zone link
+    az postgres flexible-server show
+    --resource-group {{ shared_resource_group_name }}
+    --name {{ env_db_server_name }}
+    --query state -o tsv
+  register: db_status
+  until: db_status.stdout | trim == "Ready"
+  retries: 30
+  delay: 30
+  changed_when: false
+
+# Create the ckan database
+- name: Create ckan database
+  azure_rm_resource:
+    resource_group: "{{ shared_resource_group_name }}"
+    provider: DBforPostgreSQL
+    resource_type: flexibleServers
+    resource_name: "{{ env_db_server_name }}"
+    subresource:
+      - type: databases
+        name: ckan
+    api_version: "2022-12-01"
+    body:
+      properties:
+        charset: UTF8
+        collation: en_US.utf8
+
+# Connect the DNS zone with the AKS VNet so pods can resolve the DB hostname
+- name: Link DNS zone to AKS VNet
   command: >
-    az network private-dns link vnet create \
-          --name aks-db \
-          --registration-enabled 1 \
-          --resource-group {{ resource_group_name }} \
-          --virtual-network {{resource_prefix}}-v-net \
-          --zone-name {{ db_server_name }}.private.postgres.database.azure.com
-  failed_when: # If it already exists, it's not a failure (this is one of a variety of non-idempotent commands)
-    - result.rc != 0
-    - '"exists already" not in result.stderr'
+    az network private-dns link vnet create
+    --resource-group {{ shared_resource_group_name }}
+    --zone-name {{ env_db_server_name }}.private.postgres.database.azure.com
+    --name aks-vnet-link
+    --virtual-network {{ shared_vnet_name }}
+    --registration-enabled false
+  register: aks_dns_link
+  failed_when: aks_dns_link.rc != 0 and 'exists already' not in aks_dns_link.stderr and 'already exists' not in aks_dns_link.stderr
