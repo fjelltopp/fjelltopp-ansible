@@ -225,17 +225,51 @@
     --rule-sets giftlesscors
 
 # Apply WAF policy to this environment's endpoints
+# Azure only allows one security policy per WAF per profile, so we maintain a single shared policy
 - set_fact:
     ckan_endpoint_full_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ ckan_endpoint_name }}"
     giftless_endpoint_full_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Cdn/profiles/{{ afd_profile_name }}/afdendpoints/{{ giftless_endpoint_name }}"
     waf_policy_id: "/subscriptions/{{ subscription_id }}/resourcegroups/{{ shared_resource_group_name }}/providers/Microsoft.Network/frontDoorWebApplicationFirewallPolicies/{{ waf_policy_name }}"
 
-- name: Apply WAF policy to endpoints
+- name: Get all Front Door endpoints
+  command: >
+    az afd endpoint list
+      --resource-group {{ shared_resource_group_name }}
+      --profile-name {{ afd_profile_name }}
+      --query "[].id" -o tsv
+  register: all_endpoints_raw
+  changed_when: false
+
+- name: Set all endpoints fact
+  set_fact:
+    all_endpoint_ids: "{{ all_endpoints_raw.stdout_lines | join(' ') }}"
+
+- name: Check if shared security policy exists
+  command: >
+    az afd security-policy show
+      --resource-group {{ shared_resource_group_name }}
+      --profile-name {{ afd_profile_name }}
+      --security-policy-name sharedsecpolicy
+  register: secpolicy_check
+  failed_when: false
+  changed_when: false
+
+- name: Create shared security policy
   command: >
     az afd security-policy create \
       --resource-group {{ shared_resource_group_name }} \
       --profile-name {{ afd_profile_name }} \
-      --security-policy-name "{{ env_code }}secpolicy" \
-      --domains {{ ckan_endpoint_full_id }} {{ giftless_endpoint_full_id }} \
+      --security-policy-name sharedsecpolicy \
+      --domains {{ all_endpoint_ids }} \
       --waf-policy {{ waf_policy_id }}
-  ignore_errors: true  # May need to update instead of create
+  when: secpolicy_check.rc != 0
+
+- name: Update shared security policy with all endpoints
+  command: >
+    az afd security-policy update \
+      --resource-group {{ shared_resource_group_name }} \
+      --profile-name {{ afd_profile_name }} \
+      --security-policy-name sharedsecpolicy \
+      --domains {{ all_endpoint_ids }} \
+      --waf-policy {{ waf_policy_id }}
+  when: secpolicy_check.rc == 0
