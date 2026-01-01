@@ -141,6 +141,11 @@
     --https-port 5001
 
 # Create CORS rule for this environment's CKAN hostname
+# Order must be unique per rule - use 1 for staging, 2 for production
+- name: Set rule order based on environment
+  set_fact:
+    cors_rule_order: "{{ {'s': 1, 'p': 2, 'd': 3, 't': 4}[env_code] | default(10) }}"
+
 - name: CORS Origin header rule for this environment
   command: >
     az afd rule create \
@@ -148,6 +153,7 @@
       --rule-set-name giftlesscors \
       --profile-name {{ afd_profile_name }} \
       --rule-name corsheaders{{ env_code }} \
+      --order {{ cors_rule_order }} \
       --selector Origin \
       --match-variable RequestHeader \
       --operator Equal \
