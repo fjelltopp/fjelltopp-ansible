@@ -12,7 +12,7 @@ kubeconfig: "{{ ansible_env.HOME}}/.kube/config"
 # EKS
 eks_cluster_name: ckan
 # https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html
-eks_worker_ami_id: "ami-0209251d863e91768"
+eks_worker_ami_id: "ami-0607bdd6d5e5d9050"
 eks_stack_name: "fjelltopp-eks"
 eks_vpc_cidr_block: "172.17.0.0/16"
 eks_vpc_cidr_subnet1: "172.17.0.0/18"
