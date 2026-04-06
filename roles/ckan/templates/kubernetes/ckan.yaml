@@ -180,7 +180,7 @@ spec:
               port: 5000
             initialDelaySeconds: 60
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 30
             failureThreshold: 15
           livenessProbe:
             httpGet:
@@ -188,7 +188,7 @@ spec:
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 30
             failureThreshold: 15
           ports:
             - containerPort: 5000
