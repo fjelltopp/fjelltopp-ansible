@@ -193,7 +193,12 @@ spec:
           ports:
             - containerPort: 5000
               protocol: TCP
-          resources: {}
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
           volumeMounts:
             - mountPath: /var/lib/ckan/storage
               name: ckan-storage
