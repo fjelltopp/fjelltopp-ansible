@@ -176,24 +176,29 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/3/action/status_show
               port: 5000
             initialDelaySeconds: 60
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 30
             failureThreshold: 15
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/3/action/status_show
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 5
-            timeoutSeconds: 10
+            timeoutSeconds: 30
             failureThreshold: 15
           ports:
             - containerPort: 5000
               protocol: TCP
-          resources: {}
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
           volumeMounts:
             - mountPath: /var/lib/ckan/storage
               name: ckan-storage
