@@ -176,7 +176,7 @@ spec:
 
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/3/action/status_show
               port: 5000
             initialDelaySeconds: 60
             periodSeconds: 5
@@ -184,7 +184,7 @@ spec:
             failureThreshold: 15
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/3/action/status_show
               port: 5000
             initialDelaySeconds: 10
             periodSeconds: 5
