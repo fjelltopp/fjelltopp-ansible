@@ -9,6 +9,10 @@ spec:
     spec:
       template:
         spec:
+{% if fjelltopp_cloud_provider == 'azure' %}
+          imagePullSecrets:
+            - name: acr-secret
+{% endif %}
           containers:
           - name: ckan-cronjob
             image: {{ fjelltopp_base_image }}
@@ -32,6 +36,10 @@ spec:
     spec:
       template:
         spec:
+{% if fjelltopp_cloud_provider == 'azure' %}
+          imagePullSecrets:
+            - name: acr-secret
+{% endif %}
           containers:
           - name: ckan-cronjob
             image: {{ fjelltopp_base_image }}

@@ -1,0 +1,37 @@
+# Per-environment storage account creation
+# Run this for each environment (staging, production) after shared infra is set up
+
+- name: Get AKS subnet info for storage network rules
+  azure_rm_subnet_info:
+    resource_group: "{{ shared_resource_group_name }}"
+    virtual_network_name: "{{ shared_vnet_name }}"
+    name: sb_internal_01_aks
+  register: subnet_info
+
+- name: Create a storage account for the data lake
+  azure_rm_resource:
+    resource_group: "{{ shared_resource_group_name }}"
+    provider: Storage
+    resource_type: storageAccounts
+    resource_name: "{{ env_storage_account_name }}"
+    api_version: "2023-01-01"
+    body:
+      location: "{{ azure_region }}"
+      sku:
+        name: Standard_ZRS
+      kind: StorageV2
+      properties:
+        isHnsEnabled: true
+        publicNetworkAccess: Enabled
+        networkAcls:
+          bypass: None
+          defaultAction: Allow
+          virtualNetworkRules:
+            - id: "{{ subnet_info.subnets[0].id }}"
+              action: Allow
+
+- name: Create container
+  azure_rm_storageblob:
+    resource_group: "{{ shared_resource_group_name }}"
+    storage_account_name: "{{ env_storage_account_name }}"
+    container: "{{ env_resource_prefix|lower }}-datalake"

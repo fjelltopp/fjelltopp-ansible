@@ -15,8 +15,8 @@ metadata:
     app: solr
   name: solr
 spec:
-{% if fjelltopp_env_type != 'local' %}
-  storageClassName: "{{ storage_class_name }}"
+{% if fjelltopp_cloud_provider == 'azure' %}
+  storageClassName: azurefile-csi
 {% endif %}
   accessModes:
     - ReadWriteOnce
@@ -50,6 +50,10 @@ spec:
     spec:
       securityContext:
         fsGroup: 8983
+{% if fjelltopp_cloud_provider == 'azure' %}
+      imagePullSecrets:
+        - name: acr-secret
+{% endif %}
       containers:
         - image: {{ solr_image }}:{{ solr_image_tag }}
 {% if fjelltopp_env_type == 'local' %}

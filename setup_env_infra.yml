@@ -1,0 +1,42 @@
+---
+# Per-environment infrastructure setup
+# Creates: Storage account, Database (VNet, peering, Postgres server)
+#
+# Run for each environment after shared infra is set up:
+#   ansible-playbook -i inventory/<project>.yml setup_env_infra.yml --limit staging
+#   ansible-playbook -i inventory/<project>.yml setup_env_infra.yml --limit production
+#
+# Run individual components with tags:
+#   ansible-playbook -i inventory/<project>.yml setup_env_infra.yml --limit staging --tags storage
+#   ansible-playbook -i inventory/<project>.yml setup_env_infra.yml --limit staging --tags db
+
+- name: Setup per-environment Azure infrastructure
+  hosts: all
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: Create per-environment storage account
+      include_role:
+        name: setup-aks
+        tasks_from: storage.yml
+      tags: ["storage"]
+
+    - name: Create per-environment database
+      include_role:
+        name: setup-azure-db
+      tags: ["db", "database"]
+
+    - name: Initialize per-environment secrets
+      include_role:
+        name: ckan
+        tasks_from: azure-secrets.yml
+      tags: ["secrets"]
+
+    - name: Setup Front Door endpoints (run after CKAN deploy)
+      include_role:
+        name: setup-azure-frontdoor
+        tasks_from: endpoints.yml
+        apply:
+          tags: ["frontdoor", "endpoints"]
+      tags: ["frontdoor", "endpoints", "always"]

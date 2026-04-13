@@ -1,0 +1,16 @@
+---
+# Setup Front Door endpoints for each environment
+# Run after CKAN is deployed (needs LoadBalancer IPs)
+#
+# Usage:
+#   ansible-playbook -i inventory/<project>.yml setup_frontdoor_endpoints.yml --limit staging
+#   ansible-playbook -i inventory/<project>.yml setup_frontdoor_endpoints.yml --limit production
+
+- name: Setup Front Door endpoints
+  hosts: all
+  connection: local
+  gather_facts: true
+
+  tasks:
+    - name: Include Front Door endpoints tasks
+      include_tasks: roles/setup-azure-frontdoor/tasks/endpoints.yml

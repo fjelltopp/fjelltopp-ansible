@@ -20,13 +20,9 @@ packaging = "==24.2"
 psycopg2 = "==2.9.10"
 uamqp = "==1.6.11"
 xmltodict = "==0.14.2"
-
-# See PR: https://github.com/fjelltopp/fjelltopp-ansible/pull/34
-# for why requests needs to be less than 2.32 until otherwise
 requests = {extras = ["security"], version = "<2.32"}
-
-# resolvelib must be versioned to be compatible with ansible.
 resolvelib = "==1.0.1"
+azure-cli = "==2.34"
 
 [requires]
 python_version = "3.10"

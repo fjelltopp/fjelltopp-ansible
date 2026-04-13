@@ -1,0 +1,21 @@
+---
+# Shared infrastructure setup - run once
+# Creates: Resource Group, ACR, Key Vault, AKS cluster, VNet, Front Door profile
+#
+# Usage:
+#   ansible-playbook -i inventory/<project>.yml setup_shared_infra.yml
+#
+# Run individual roles with tags:
+#   ansible-playbook -i inventory/<project>.yml setup_shared_infra.yml --tags azure
+#   ansible-playbook -i inventory/<project>.yml setup_shared_infra.yml --tags aks
+#   ansible-playbook -i inventory/<project>.yml setup_shared_infra.yml --tags frontdoor
+
+- name: Setup shared Azure infrastructure
+  hosts: staging  # Use staging host to get group_vars, but runs locally
+  connection: local
+  gather_facts: true
+
+  roles:
+    - { role: setup-azure, tags: ["azure", "acr", "keyvault"] }
+    - { role: setup-aks, tags: ["aks", "vnet"] }
+    - { role: setup-azure-frontdoor, tags: ["frontdoor", "afd"] }
