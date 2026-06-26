@@ -6,19 +6,13 @@
   register: cloudwatch_policy_output
   become: false
 
-- name: Create Jenkins EKS access policy
+- name: Create EKS secrets access policy
   community.aws.iam_managed_policy:
     policy_name: eks-secrets-access-policy
     state: present
     policy: "{{ lookup( 'template', 'eks_secrets_access_policy.json') }}"
-  register: jenkins_eks_policy_output
+  register: eks_policy_output
   become: false
-
-- name: Show Jenkins EKS access policy ARN
-  ansible.builtin.debug:
-    var: jenkins_eks_policy_output
-  when: show_debug_output is defined
-
 
 - name: Create IAM role for EKS cluster
   iam_role:
@@ -32,18 +26,6 @@
     assume_role_policy_document: "{{ lookup('file','iam-role-trust-policy.json') }}"
     description: "IAM role for EKS cluster {{ eks_cluster_name }}"
   register: iam_output
-  become: false
-
-- name: Create cross-account Jenkins IAM role
-  iam_role:
-    name: "Fjelltopp-cross-account-role"
-    managed_policy:
-      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
-      - "{{ jenkins_eks_policy_output.policy.arn }}"
-    state: present
-    assume_role_policy_document: "{{ lookup('template','jenkins-crossaccount-iam-role-trust-policy.json') }}"
-    description: "IAM role for cross-account Jenkins access to EKS cluster {{ eks_cluster_name }} and secrets"
-  register: jenkins_iam_role_output
   become: false
 
 - name: Create dedicated VPC (with Cloudformation)
