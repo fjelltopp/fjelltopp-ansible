@@ -20,6 +20,38 @@
     --kubeconfig "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
   become: false
 
+- name: Get cluster details for Secrets Manager
+  ansible.builtin.command: >
+    aws eks describe-cluster
+    --name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+    --query 'cluster.{ca: certificateAuthority.data, endpoint: endpoint, arn: arn}'
+    --output json
+  register: cluster_details_raw
+  changed_when: false
+  become: false
+
+- name: Parse cluster details
+  ansible.builtin.set_fact:
+    cluster_details: "{{ cluster_details_raw.stdout | from_json }}"
+  become: false
+
+- name: Store EKS cluster config in Secrets Manager
+  community.aws.aws_secret:
+    aws_region: "{{ aws_region }}"
+    name: "eks_{{ eks_cluster_name_v2 }}_{{ item.name }}"
+    state: present
+    secret_type: "string"
+    secret: "{{ item.secret }}"
+  become: false
+  with_items:
+    - name: ca
+      secret: "{{ cluster_details.ca }}"
+    - name: endpoint
+      secret: "{{ cluster_details.endpoint }}"
+    - name: arn
+      secret: "{{ cluster_details.arn }}"
+
 # 3. Get the cluster security group ID (used by MNG nodes)
 - name: Get ckan-v2 cluster security group ID
   command: >
