@@ -127,6 +127,39 @@
     - ckan_ingress.yaml
     - ckan_cronjob.yaml
 
+- name: Wait for CKAN deployment to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: ckan
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 300
+  become: false
+
+- name: Get CKAN pod name
+  kubernetes.core.k8s_info:
+    kind: Pod
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+    label_selectors:
+      - app=ckan
+    field_selectors:
+      - status.phase=Running
+  become: false
+  register: ckan_pods
+
+- name: Rebuild Solr search index
+  kubernetes.core.k8s_exec:
+    namespace: "{{ application_namespace }}"
+    kubeconfig: "{{ kubeconfig }}"
+    pod: "{{ ckan_pods.resources[0].metadata.name }}"
+    command: ckan --config /etc/ckan/production.ini search-index rebuild
+  become: false
+
 - name: Setup backup job
   kubernetes.core.k8s:
     state: present
