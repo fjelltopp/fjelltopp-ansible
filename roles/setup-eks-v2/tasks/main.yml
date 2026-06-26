@@ -1,0 +1,246 @@
+---
+# 1. Provision the cluster via eksctl
+- name: Create EKS cluster ckan-v2 with eksctl
+  command: >
+    eksctl create cluster
+    --config-file {{ playbook_dir }}/eksctl/cluster-config.yaml
+  environment:
+    EKS_VPC_ID: "{{ eks_vpc_id }}"
+    EKS_SUBNET_AF_SOUTH_1A: "{{ eks_subnet_af_south_1a }}"
+    EKS_SUBNET_AF_SOUTH_1B: "{{ eks_subnet_af_south_1b }}"
+    EKS_SUBNET_AF_SOUTH_1C: "{{ eks_subnet_af_south_1c }}"
+  become: false
+
+# 2. Generate a named kubeconfig file for ckan-v2
+- name: Generate kubeconfig for ckan-v2
+  command: >
+    aws eks update-kubeconfig
+    --name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+    --kubeconfig "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
+  become: false
+
+# 3. Get the cluster security group ID (used by MNG nodes)
+- name: Get ckan-v2 cluster security group ID
+  command: >
+    aws eks describe-cluster
+    --name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+    --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId'
+    --output text
+  register: new_cluster_sg_result
+  become: false
+
+- name: Set new cluster SG fact
+  set_fact:
+    new_cluster_sg_id: "{{ new_cluster_sg_result.stdout | trim }}"
+
+# 4. Allow new cluster nodes to access RDS (add rule, keep existing rules)
+- name: Allow ckan-v2 nodes to access RDS security group
+  amazon.aws.ec2_group:
+    name: "{{ application_namespace }}-rds-sg"
+    description: "Access for EKS clusters"
+    vpc_id: "{{ eks_vpc_id }}"
+    region: "{{ aws_region }}"
+    purge_rules: false
+    rules:
+      - proto: tcp
+        from_port: 5432
+        to_port: 5432
+        group_id: "{{ new_cluster_sg_id }}"
+  become: false
+
+# 5. Get EFS mount target ID for the existing EFS
+- name: Get existing EFS info
+  community.aws.efs_info:
+    aws_region: "{{ aws_region }}"
+    tags:
+      Name: "{{ eks_cluster_name }}-efs"
+  register: efs_info
+  become: false
+
+- name: Get EFS mount target ID
+  command: >
+    aws efs describe-mount-targets
+    --file-system-id "{{ efs_info.efs[0].file_system_id }}"
+    --region "{{ aws_region }}"
+    --query 'MountTargets[0].MountTargetId'
+    --output text
+  register: efs_mount_target_id_result
+  become: false
+
+# 6. Add new cluster SG to EFS mount target security groups (keep existing SGs)
+- name: Get current EFS mount target security groups
+  command: >
+    aws efs describe-mount-target-security-groups
+    --mount-target-id "{{ efs_mount_target_id_result.stdout | trim }}"
+    --region "{{ aws_region }}"
+    --query 'SecurityGroups'
+    --output json
+  register: efs_sgs_result
+  become: false
+
+- name: Add ckan-v2 node SG to EFS mount target
+  command: >
+    aws efs modify-mount-target-security-groups
+    --mount-target-id "{{ efs_mount_target_id_result.stdout | trim }}"
+    --security-groups {{ ((efs_sgs_result.stdout | from_json) + [new_cluster_sg_id]) | unique | join(' ') }}
+    --region "{{ aws_region }}"
+  become: false
+
+# 7. Get AWS account ID
+- name: Get AWS account ID
+  command: aws sts get-caller-identity --query Account --output text
+  register: aws_account_id_result
+  become: false
+
+- name: Set account ID fact
+  set_fact:
+    aws_account_id: "{{ aws_account_id_result.stdout | trim }}"
+
+# 8. Get new node group IAM role and attach secrets access policy
+- name: Get ckan-v2 node group IAM role ARN
+  command: >
+    aws eks describe-nodegroup
+    --cluster-name "{{ eks_cluster_name_v2 }}"
+    --nodegroup-name "ckan-workers"
+    --region "{{ aws_region }}"
+    --query 'nodegroup.nodeRole'
+    --output text
+  register: new_node_role_arn_result
+  become: false
+
+- name: Set new node role name fact
+  set_fact:
+    new_node_role_name: "{{ new_node_role_arn_result.stdout | trim | regex_replace('.*/', '') }}"
+
+- name: Attach eks-secrets-access-policy to ckan-v2 node role
+  community.aws.iam_role:
+    name: "{{ new_node_role_name }}"
+    managed_policy:
+      - "arn:aws:iam::{{ aws_account_id }}:policy/eks-secrets-access-policy"
+    purge_policies: false
+  become: false
+
+# 9. Update Giftless S3 bucket policy to include new node role ARN
+- name: Get current Giftless S3 bucket policy
+  command: >
+    aws s3api get-bucket-policy
+    --bucket "{{ giftless_s3_bucket }}"
+    --query Policy
+    --output text
+  register: s3_policy_raw
+  become: false
+  when: use_giftless | bool
+
+- name: Write current S3 policy to temp file
+  copy:
+    content: "{{ s3_policy_raw.stdout }}"
+    dest: /tmp/giftless_s3_policy_current.json
+  become: false
+  when: use_giftless | bool
+
+- name: Add new node role ARN to Giftless S3 bucket policy
+  shell: |
+    python3 << 'EOF'
+    import json
+    with open('/tmp/giftless_s3_policy_current.json') as f:
+        policy = json.loads(f.read())
+    new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
+    for stmt in policy['Statement']:
+        principal = stmt.get('Principal', {})
+        if isinstance(principal, dict) and 'AWS' in principal:
+            arns = principal['AWS']
+            if isinstance(arns, str):
+                arns = [arns]
+            if new_arn not in arns:
+                arns.append(new_arn)
+            stmt['Principal']['AWS'] = arns
+    with open('/tmp/giftless_s3_policy_updated.json', 'w') as f:
+        json.dump(policy, f)
+    EOF
+  become: false
+  when: use_giftless | bool
+
+- name: Apply updated Giftless S3 bucket policy
+  command: >
+    aws s3api put-bucket-policy
+    --bucket "{{ giftless_s3_bucket }}"
+    --policy file:///tmp/giftless_s3_policy_updated.json
+  become: false
+  when: use_giftless | bool
+
+# 10. Create CloudWatch namespace
+- name: Create amazon-cloudwatch namespace in ckan-v2
+  kubernetes.core.k8s:
+    name: "amazon-cloudwatch"
+    api_version: v1
+    kind: Namespace
+    state: present
+    kubeconfig: "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
+  become: false
+
+# 11. Deploy Fluent-bit for CloudWatch integration
+- name: Deploy Fluent-bit to ckan-v2
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/' + item) | from_yaml_all | list }}"
+    namespace: "amazon-cloudwatch"
+    kubeconfig: "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
+  become: false
+  with_items:
+    - fluent-bit-configmap.yaml
+    - fluent-bit.yaml
+
+# 12. Deploy Reloader
+- name: Add Stakater Helm repository
+  kubernetes.core.helm_repository:
+    name: stakater
+    repo_url: https://stakater.github.io/stakater-charts
+  become: false
+
+- name: Deploy Reloader to ckan-v2
+  kubernetes.core.helm:
+    namespace: default
+    update_repo_cache: true
+    name: reloader
+    chart_repo_url: https://stakater.github.io/stakater-charts
+    chart_ref: reloader
+    kubeconfig: "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
+    values:
+      ignoreSecrets: false
+      ignoreConfigMaps: false
+  become: false
+
+# 13. Deploy NFS subdir external provisioner (EFS StorageClass)
+- name: Add NFS provisioner Helm repository
+  kubernetes.core.helm_repository:
+    name: nfs-subdir-external-provisioner
+    repo_url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+  become: false
+
+- name: Deploy NFS provisioner for EFS to ckan-v2
+  kubernetes.core.helm:
+    update_repo_cache: true
+    name: nfs-subdir-external-provisioner
+    chart_repo_url: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner
+    chart_ref: nfs-subdir-external-provisioner
+    kubeconfig: "{{ ansible_env.HOME }}/.kube/{{ eks_cluster_name_v2 }}_cluster_config"
+    namespace: "default"
+    values:
+      storageClass:
+        name: "efs-client"
+        archiveOnDelete: true
+        accessModes: ReadWriteMany
+      nfs:
+        server: "{{ eks_efs_ip }}"
+        path: "/"
+        mountOptions:
+          - nfsvers=4.1
+          - rsize=1048576
+          - wsize=1048576
+          - hard
+          - timeo=600
+          - retrans=2
+          - noresvport
+  become: false
