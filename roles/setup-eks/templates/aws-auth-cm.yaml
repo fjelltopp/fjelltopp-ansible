@@ -18,16 +18,13 @@ data:
       groups:
         - system:masters
 {% endif %}
-    - rolearn: {{ jenkins_iam_role_output.arn }}{% raw %}
-      username: adminuser:Jenkins
+{% if eks_gha_iam_role is defined %}
+    - rolearn: {{ eks_gha_iam_role }}{% raw %}
+      username: adminuser:GitHubActions
 {% endraw %}
       groups:
         - system:masters
-    - rolearn: {{ eks_jenkins_iam_role }}{% raw %}
-      username: adminuser:Jenkins
-{% endraw %}
-      groups:
-        - system:masters
+{% endif %}
 {% if eks_iam_admin_account is defined %}
   mapUsers: |
     - userarn: {{ eks_iam_admin_account }}{% raw %}

@@ -22,9 +22,8 @@ eks_worker_nodes_min: 1
 eks_worker_nodes_max: 3
 eks_worker_nodes_desired: 1
 eks_worker_instance_type: "t3.medium"
-
-# Jenkins related
-jenkins_aws_account_id: "791438942407"
+# IAM role ARN for GitHub Actions to access EKS — set per-environment in inventory
+# eks_gha_iam_role: ""
 
 # Environment type - local is for Minikube, aws for AWS :)
 # by default it's local
