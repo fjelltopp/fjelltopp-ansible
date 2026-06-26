@@ -1,0 +1,38 @@
+---
+- hosts: all
+  connection: local
+  become: false
+
+  pre_tasks:
+    - name: Download required Ansible collections
+      command: "ansible-galaxy collection install -r roles/requirements.yml --force"
+      delegate_to: localhost
+      changed_when: false
+      become: false
+      tags: setup
+
+    - name: Load VPC and EFS variables from .env
+      set_fact:
+        eks_vpc_id: "{{ lookup('env', 'EKS_VPC_ID') }}"
+        eks_subnet_af_south_1a: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1A') }}"
+        eks_subnet_af_south_1b: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1B') }}"
+        eks_subnet_af_south_1c: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1C') }}"
+        eks_efs_ip: "{{ lookup('env', 'EKS_EFS_IP') }}"
+      become: false
+
+    - name: Validate required variables are set
+      assert:
+        that:
+          - eks_vpc_id | length > 0
+          - eks_subnet_af_south_1a | length > 0
+          - eks_subnet_af_south_1b | length > 0
+          - eks_subnet_af_south_1c | length > 0
+          - eks_efs_ip | length > 0
+        fail_msg: "Required environment variables missing. Source dms-infrastructure/.env before running."
+      become: false
+
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: setup-eks-v2, tags: ["setup", "all", "eks-v2"] }
