@@ -6,7 +6,7 @@
     --name "{{ eks_cluster_name_v2 }}"
     --region "{{ aws_region }}"
   register: eks_cluster_check
-  failed_when: false
+  failed_when: eks_cluster_check.rc != 0 and 'ResourceNotFoundException' not in eks_cluster_check.stderr
   changed_when: false
   become: false
 
