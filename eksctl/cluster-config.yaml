@@ -16,7 +16,7 @@ vpc:
 
 managedNodeGroups:
   - name: ckan-workers
-    instanceType: t3.large
+    instanceType: t3.medium
     minSize: 1
     maxSize: 3
     desiredCapacity: 1
