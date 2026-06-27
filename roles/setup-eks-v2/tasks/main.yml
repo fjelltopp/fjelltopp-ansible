@@ -154,6 +154,7 @@
 - name: Get AWS account ID
   command: aws sts get-caller-identity --query Account --output text
   register: aws_account_id_result
+  changed_when: false
   become: false
 
 - name: Set account ID fact
