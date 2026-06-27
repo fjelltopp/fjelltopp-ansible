@@ -1,0 +1,52 @@
+---
+- hosts: all
+  connection: local
+  become: false
+
+  pre_tasks:
+    - name: Download required Ansible collections
+      command: "ansible-galaxy collection install -r roles/requirements.yml --force"
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+      become: false
+      tags: [always, setup]
+
+    - name: Load VPC and EFS variables from environment
+      set_fact:
+        eks_vpc_id: "{{ lookup('env', 'EKS_VPC_ID') }}"
+        eks_subnet_af_south_1a: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1A') }}"
+        eks_subnet_af_south_1b: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1B') }}"
+        eks_subnet_af_south_1c: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1C') }}"
+        eks_efs_ip: "{{ lookup('env', 'EKS_EFS_IP') }}"
+      become: false
+      tags: always
+
+    - name: Validate required variables are set
+      assert:
+        that:
+          - eks_vpc_id | length > 0
+          - eks_subnet_af_south_1a | length > 0
+          - eks_subnet_af_south_1b | length > 0
+          - eks_subnet_af_south_1c | length > 0
+          - eks_efs_ip | length > 0
+          - aws_region is defined and aws_region | length > 0
+        fail_msg: "Required environment variables missing. Source dms-infrastructure/.env and pass -e aws_region=<region>."
+      become: false
+      tags: always
+
+    - name: Validate runtime variables match eksctl cluster-config.yaml assumptions
+      assert:
+        that:
+          - eks_cluster_name_v2 == 'ckan-v2'
+        fail_msg: >-
+          eks_cluster_name_v2 ({{ eks_cluster_name_v2 }}) must be 'ckan-v2'
+          to match eksctl/cluster-config.yaml.
+      become: false
+      tags: always
+
+- hosts: all
+  connection: local
+  become: false
+  roles:
+    - { role: setup-eks-v2, tags: ["setup", "all", "eks-v2"] }

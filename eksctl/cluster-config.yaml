@@ -1,0 +1,38 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: ckan-v2
+  region: af-south-1
+  version: "1.36"
+
+vpc:
+  id: "${EKS_VPC_ID}"
+  subnets:
+    public:
+      af-south-1a: { id: "${EKS_SUBNET_AF_SOUTH_1A}" }
+      af-south-1b: { id: "${EKS_SUBNET_AF_SOUTH_1B}" }
+      af-south-1c: { id: "${EKS_SUBNET_AF_SOUTH_1C}" }
+
+managedNodeGroups:
+  - name: ckan-workers
+    instanceType: t3.medium
+    minSize: 1
+    maxSize: 3
+    desiredCapacity: 1
+    amiFamily: AmazonLinux2023
+    iam:
+      withAddonPolicies:
+        cloudWatch: true
+        efs: true
+
+addons:
+  # version: latest resolves at provision time to the newest version compatible
+  # with k8s 1.36. To pin for reproducibility, replace with output of:
+  #   eksctl utils describe-addon-versions --kubernetes-version 1.36 --name <addon>
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
