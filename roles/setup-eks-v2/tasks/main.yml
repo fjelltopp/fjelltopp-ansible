@@ -87,7 +87,8 @@
     new_cluster_sg_id: "{{ new_cluster_sg_result.stdout | trim }}"
 
 # 4. Allow new cluster nodes to access RDS (add rule, keep existing rules)
-- name: Allow ckan-v2 nodes to access RDS security group
+# Note: description uses eks_cluster_name (original cluster) intentionally — SG descriptions are immutable after creation.
+- name: Allow ckan-v2 nodes to access RDS SG (description uses original cluster name - immutable)
   amazon.aws.ec2_group:
     name: "{{ application_namespace }}-rds-sg"
     description: "Access for {{ eks_cluster_name }} EKS cluster"
