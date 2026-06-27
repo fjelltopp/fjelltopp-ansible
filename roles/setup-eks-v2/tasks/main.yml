@@ -109,6 +109,11 @@
   register: efs_info
   become: false
 
+- name: Fail if no EFS found
+  ansible.builtin.fail:
+    msg: "No EFS found with tag Name={{ eks_cluster_name }}-efs. Ensure the EFS exists before running this role."
+  when: efs_info.efs | length == 0
+
 - name: Get EFS mount target ID
   command: >
     aws efs describe-mount-targets
@@ -118,6 +123,11 @@
     --output text
   register: efs_mount_target_id_result
   become: false
+
+- name: Fail if no EFS mount target found for the given IP
+  ansible.builtin.fail:
+    msg: "No EFS mount target found with IP {{ eks_efs_ip }} on filesystem {{ efs_info.efs[0].file_system_id }}. Check eks_efs_ip."
+  when: efs_mount_target_id_result.stdout | trim in ['None', '']
 
 # 6. Add new cluster SG to EFS mount target security groups (keep existing SGs)
 - name: Get current EFS mount target security groups
