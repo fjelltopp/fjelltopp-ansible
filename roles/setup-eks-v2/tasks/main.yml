@@ -193,13 +193,28 @@
     --query Policy
     --output text
   register: s3_policy_raw
+  changed_when: false
+  become: false
+  when: use_giftless | bool
+
+- name: Create temp file for current S3 policy
+  ansible.builtin.tempfile:
+    suffix: _giftless_s3_policy_current.json
+  register: s3_policy_current_tmp
+  become: false
+  when: use_giftless | bool
+
+- name: Create temp file for updated S3 policy
+  ansible.builtin.tempfile:
+    suffix: _giftless_s3_policy_updated.json
+  register: s3_policy_updated_tmp
   become: false
   when: use_giftless | bool
 
 - name: Write current S3 policy to temp file
   copy:
     content: "{{ s3_policy_raw.stdout }}"
-    dest: /tmp/giftless_s3_policy_current.json
+    dest: "{{ s3_policy_current_tmp.path }}"
   become: false
   when: use_giftless | bool
 
@@ -207,7 +222,7 @@
   shell: |
     python3 << 'EOF'
     import json
-    with open('/tmp/giftless_s3_policy_current.json') as f:
+    with open('{{ s3_policy_current_tmp.path }}') as f:
         policy = json.loads(f.read())
     if isinstance(policy['Statement'], dict):
         policy['Statement'] = [policy['Statement']]
@@ -221,7 +236,7 @@
             if new_arn not in arns:
                 arns.append(new_arn)
             stmt['Principal']['AWS'] = arns
-    with open('/tmp/giftless_s3_policy_updated.json', 'w') as f:
+    with open('{{ s3_policy_updated_tmp.path }}', 'w') as f:
         json.dump(policy, f)
     EOF
   become: false
@@ -231,9 +246,19 @@
   command: >
     aws s3api put-bucket-policy
     --bucket "{{ giftless_s3_bucket }}"
-    --policy file:///tmp/giftless_s3_policy_updated.json
+    --policy "file://{{ s3_policy_updated_tmp.path }}"
   become: false
   when: use_giftless | bool
+
+- name: Clean up S3 policy temp files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  become: false
+  when: use_giftless | bool
+  loop:
+    - "{{ s3_policy_current_tmp.path }}"
+    - "{{ s3_policy_updated_tmp.path }}"
 
 # 10. Create CloudWatch namespace
 - name: Create amazon-cloudwatch namespace in ckan-v2
