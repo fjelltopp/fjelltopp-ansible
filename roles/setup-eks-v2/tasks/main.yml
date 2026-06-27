@@ -191,91 +191,95 @@
   become: false
 
 # 9. Update Giftless S3 bucket policy to include new node role ARN
-- name: Get current Giftless S3 bucket policy
-  command: >
-    aws s3api get-bucket-policy
-    --bucket "{{ giftless_s3_bucket }}"
-    --query Policy
-    --output text
-  register: s3_policy_raw
-  changed_when: false
-  become: false
+- name: Update Giftless S3 bucket policy to include new node role ARN
   when: use_giftless | bool
+  become: false
+  block:
+    - name: Get current Giftless S3 bucket policy
+      command: >
+        aws s3api get-bucket-policy
+        --bucket "{{ giftless_s3_bucket }}"
+        --query Policy
+        --output text
+      register: s3_policy_raw
+      changed_when: false
 
-- name: Create temp file for current S3 policy
-  ansible.builtin.tempfile:
-    suffix: _giftless_s3_policy_current.json
-  register: s3_policy_current_tmp
-  become: false
-  when: use_giftless | bool
+    - name: Create temp file for current S3 policy
+      ansible.builtin.tempfile:
+        suffix: _giftless_s3_policy_current.json
+      register: s3_policy_current_tmp
 
-- name: Create temp file for updated S3 policy
-  ansible.builtin.tempfile:
-    suffix: _giftless_s3_policy_updated.json
-  register: s3_policy_updated_tmp
-  become: false
-  when: use_giftless | bool
+    - name: Create temp file for updated S3 policy
+      ansible.builtin.tempfile:
+        suffix: _giftless_s3_policy_updated.json
+      register: s3_policy_updated_tmp
 
-- name: Write current S3 policy to temp file
-  copy:
-    content: "{{ s3_policy_raw.stdout }}"
-    dest: "{{ s3_policy_current_tmp.path }}"
-  become: false
-  when: use_giftless | bool
+    - name: Write current S3 policy to temp file
+      copy:
+        content: "{{ s3_policy_raw.stdout }}"
+        dest: "{{ s3_policy_current_tmp.path }}"
 
-- name: Add new node role ARN to Giftless S3 bucket policy
-  shell: |
-    python3 << 'EOF'
-    import json
-    with open('{{ s3_policy_current_tmp.path }}') as f:
-        policy = json.loads(f.read())
-    if isinstance(policy['Statement'], dict):
-        policy['Statement'] = [policy['Statement']]
-    new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
-    giftless_bucket = '{{ giftless_s3_bucket }}'
-    giftless_resources = {f'arn:aws:s3:::{giftless_bucket}', f'arn:aws:s3:::{giftless_bucket}/*'}
-    for stmt in policy['Statement']:
-        if stmt.get('Effect') != 'Allow':
-            continue
-        action = stmt.get('Action', '')
-        if action != 's3:*':
-            continue
-        resources = stmt.get('Resource', [])
-        if isinstance(resources, str):
-            resources = [resources]
-        if not giftless_resources.issubset(set(resources)):
-            continue
-        principal = stmt.get('Principal', {})
-        if isinstance(principal, dict) and 'AWS' in principal:
-            arns = principal['AWS']
-            if isinstance(arns, str):
-                arns = [arns]
-            if new_arn not in arns:
-                arns.append(new_arn)
-            stmt['Principal']['AWS'] = arns
-    with open('{{ s3_policy_updated_tmp.path }}', 'w') as f:
-        json.dump(policy, f)
-    EOF
-  become: false
-  when: use_giftless | bool
+    - name: Add new node role ARN to Giftless S3 bucket policy
+      shell: |
+        python3 << 'EOF'
+        import json
+        with open('{{ s3_policy_current_tmp.path }}') as f:
+            policy = json.loads(f.read())
+        if isinstance(policy['Statement'], dict):
+            policy['Statement'] = [policy['Statement']]
+        new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
+        giftless_bucket = '{{ giftless_s3_bucket }}'
+        giftless_resources = {f'arn:aws:s3:::{giftless_bucket}', f'arn:aws:s3:::{giftless_bucket}/*'}
+        changed = False
+        for stmt in policy['Statement']:
+            if stmt.get('Effect') != 'Allow':
+                continue
+            action = stmt.get('Action', '')
+            if action != 's3:*':
+                continue
+            resources = stmt.get('Resource', [])
+            if isinstance(resources, str):
+                resources = [resources]
+            if not giftless_resources.issubset(set(resources)):
+                continue
+            principal = stmt.get('Principal', {})
+            if isinstance(principal, dict) and 'AWS' in principal:
+                arns = principal['AWS']
+                if isinstance(arns, str):
+                    arns = [arns]
+                if new_arn not in arns:
+                    arns.append(new_arn)
+                    changed = True
+                stmt['Principal']['AWS'] = arns
+        with open('{{ s3_policy_updated_tmp.path }}', 'w') as f:
+            json.dump(policy, f)
+        if changed:
+            print('changed')
+        EOF
+      register: s3_policy_update_result
+      changed_when: "'changed' in s3_policy_update_result.stdout"
 
-- name: Apply updated Giftless S3 bucket policy
-  command: >
-    aws s3api put-bucket-policy
-    --bucket "{{ giftless_s3_bucket }}"
-    --policy "file://{{ s3_policy_updated_tmp.path }}"
-  become: false
-  when: use_giftless | bool
+    - name: Apply updated Giftless S3 bucket policy
+      command: >
+        aws s3api put-bucket-policy
+        --bucket "{{ giftless_s3_bucket }}"
+        --policy "file://{{ s3_policy_updated_tmp.path }}"
+      when: s3_policy_update_result.changed
 
-- name: Clean up S3 policy temp files
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: absent
-  become: false
-  when: use_giftless | bool
-  loop:
-    - "{{ s3_policy_current_tmp.path }}"
-    - "{{ s3_policy_updated_tmp.path }}"
+  always:
+    - name: Clean up current S3 policy temp file
+      ansible.builtin.file:
+        path: "{{ s3_policy_current_tmp.path }}"
+        state: absent
+      become: false
+      when: s3_policy_current_tmp is defined and s3_policy_current_tmp.path is defined
+
+    - name: Clean up updated S3 policy temp file
+      ansible.builtin.file:
+        path: "{{ s3_policy_updated_tmp.path }}"
+        state: absent
+      become: false
+      when: s3_policy_updated_tmp is defined and s3_policy_updated_tmp.path is defined
 
 # 10. Create CloudWatch namespace
 - name: Create amazon-cloudwatch namespace in ckan-v2
