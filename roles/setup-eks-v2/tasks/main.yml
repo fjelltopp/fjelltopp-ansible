@@ -206,6 +206,8 @@
     import json
     with open('/tmp/giftless_s3_policy_current.json') as f:
         policy = json.loads(f.read())
+    if isinstance(policy['Statement'], dict):
+        policy['Statement'] = [policy['Statement']]
     new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
     for stmt in policy['Statement']:
         principal = stmt.get('Principal', {})
