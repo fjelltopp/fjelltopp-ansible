@@ -12,7 +12,7 @@
       become: false
       tags: [always, setup]
 
-    - name: Load VPC and EFS variables from .env
+    - name: Load VPC and EFS variables from environment
       set_fact:
         eks_vpc_id: "{{ lookup('env', 'EKS_VPC_ID') }}"
         eks_subnet_af_south_1a: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1A') }}"
