@@ -18,7 +18,9 @@
         eks_subnet_af_south_1b: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1B') }}"
         eks_subnet_af_south_1c: "{{ lookup('env', 'EKS_SUBNET_AF_SOUTH_1C') }}"
         eks_efs_ip: "{{ lookup('env', 'EKS_EFS_IP') }}"
+        aws_region: "{{ lookup('env', 'AWS_REGION') }}"
       become: false
+      tags: always
 
     - name: Validate required variables are set
       assert:
@@ -28,8 +30,10 @@
           - eks_subnet_af_south_1b | length > 0
           - eks_subnet_af_south_1c | length > 0
           - eks_efs_ip | length > 0
+          - aws_region | length > 0
         fail_msg: "Required environment variables missing. Source dms-infrastructure/.env before running."
       become: false
+      tags: always
 
 - hosts: all
   connection: local
