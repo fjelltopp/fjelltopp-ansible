@@ -192,11 +192,11 @@
     new_node_role_name: "{{ new_node_role_arn_result.stdout | trim | regex_replace('.*/', '') }}"
 
 - name: Attach eks-secrets-access-policy to ckan-v2 node role
-  community.aws.iam_role:
-    name: "{{ new_node_role_name }}"
-    managed_policy:
-      - "arn:aws:iam::{{ aws_account_id }}:policy/eks-secrets-access-policy"
-    purge_policies: false
+  command: >
+    aws iam attach-role-policy
+    --role-name "{{ new_node_role_name }}"
+    --policy-arn "arn:aws:iam::{{ aws_account_id }}:policy/eks-secrets-access-policy"
+  changed_when: false
   become: false
 
 # 9. Update Giftless S3 bucket policy to include new node role ARN
