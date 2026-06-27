@@ -79,6 +79,7 @@
     --query 'cluster.resourcesVpcConfig.clusterSecurityGroupId'
     --output text
   register: new_cluster_sg_result
+  changed_when: false
   become: false
 
 - name: Set new cluster SG fact
