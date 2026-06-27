@@ -173,6 +173,7 @@
     --query 'nodegroup.nodeRole'
     --output text
   register: new_node_role_arn_result
+  changed_when: false
   become: false
 
 - name: Set new node role name fact
