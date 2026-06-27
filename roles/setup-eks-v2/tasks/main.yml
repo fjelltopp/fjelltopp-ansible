@@ -12,6 +12,13 @@
   become: false
 
 # 2. Generate a named kubeconfig file for ckan-v2
+- name: Ensure .kube directory exists
+  file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: '0700'
+  become: false
+
 - name: Generate kubeconfig for ckan-v2
   command: >
     aws eks update-kubeconfig
