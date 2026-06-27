@@ -93,6 +93,7 @@
     vpc_id: "{{ eks_vpc_id }}"
     region: "{{ aws_region }}"
     purge_rules: false
+    purge_rules_egress: false
     rules:
       - proto: tcp
         from_port: 5432
