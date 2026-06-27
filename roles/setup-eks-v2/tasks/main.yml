@@ -124,6 +124,7 @@
     --query "MountTargets[?IpAddress==`{{ eks_efs_ip }}`].MountTargetId | [0]"
     --output text
   register: efs_mount_target_id_result
+  changed_when: false
   become: false
 
 - name: Fail if no EFS mount target found for the given IP
