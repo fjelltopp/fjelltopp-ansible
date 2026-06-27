@@ -231,6 +231,8 @@
         policy['Statement'] = [policy['Statement']]
     new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
     for stmt in policy['Statement']:
+        if stmt.get('Effect') != 'Allow':
+            continue
         principal = stmt.get('Principal', {})
         if isinstance(principal, dict) and 'AWS' in principal:
             arns = principal['AWS']
