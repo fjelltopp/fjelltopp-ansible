@@ -152,6 +152,7 @@
     --security-groups {{ ((efs_sgs_result.stdout | from_json) + [new_cluster_sg_id]) | unique | join(' ') }}
     --region "{{ aws_region }}"
   become: false
+  when: new_cluster_sg_id not in (efs_sgs_result.stdout | from_json)
 
 # 7. Get AWS account ID
 - name: Get AWS account ID
