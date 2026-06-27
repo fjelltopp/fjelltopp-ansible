@@ -27,6 +27,9 @@ managedNodeGroups:
         efs: true
 
 addons:
+  # version: latest resolves at provision time to the newest version compatible
+  # with k8s 1.36. To pin for reproducibility, replace with output of:
+  #   eksctl utils describe-addon-versions --kubernetes-version 1.36 --name <addon>
   - name: vpc-cni
     version: latest
   - name: coredns
