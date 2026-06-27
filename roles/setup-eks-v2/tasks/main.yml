@@ -122,7 +122,7 @@
     aws efs describe-mount-targets
     --file-system-id "{{ efs_info.efs[0].file_system_id }}"
     --region "{{ aws_region }}"
-    --query "MountTargets[?IpAddress==`{{ eks_efs_ip }}`].MountTargetId | [0]"
+    --query "MountTargets[?IpAddress=='{{ eks_efs_ip }}'].MountTargetId | [0]"
     --output text
   register: efs_mount_target_id_result
   changed_when: false
