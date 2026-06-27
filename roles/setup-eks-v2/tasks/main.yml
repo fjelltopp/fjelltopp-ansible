@@ -11,9 +11,18 @@
   become: false
 
 - name: Create EKS cluster ckan-v2 with eksctl
-  command: >
-    eksctl create cluster
-    --config-file {{ playbook_dir }}/eksctl/cluster-config.yaml
+  shell: |
+    set -euo pipefail
+    command -v envsubst > /dev/null 2>&1 || { echo "envsubst is required but not installed (install via: apt-get install gettext or brew install gettext)"; exit 1; }
+    : "${EKS_VPC_ID:?EKS_VPC_ID is required}"
+    : "${EKS_SUBNET_AF_SOUTH_1A:?EKS_SUBNET_AF_SOUTH_1A is required}"
+    : "${EKS_SUBNET_AF_SOUTH_1B:?EKS_SUBNET_AF_SOUTH_1B is required}"
+    : "${EKS_SUBNET_AF_SOUTH_1C:?EKS_SUBNET_AF_SOUTH_1C is required}"
+    envsubst '$EKS_VPC_ID $EKS_SUBNET_AF_SOUTH_1A $EKS_SUBNET_AF_SOUTH_1B $EKS_SUBNET_AF_SOUTH_1C' \
+      < "{{ playbook_dir }}/eksctl/cluster-config.yaml" \
+      | eksctl create cluster --config-file -
+  args:
+    executable: /bin/bash
   environment:
     EKS_VPC_ID: "{{ eks_vpc_id }}"
     EKS_SUBNET_AF_SOUTH_1A: "{{ eks_subnet_af_south_1a }}"
