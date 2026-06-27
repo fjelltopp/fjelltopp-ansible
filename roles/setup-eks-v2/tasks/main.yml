@@ -1,5 +1,15 @@
 ---
 # 1. Provision the cluster via eksctl
+- name: Check if EKS cluster already exists
+  command: >
+    aws eks describe-cluster
+    --name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+  register: eks_cluster_check
+  failed_when: false
+  changed_when: false
+  become: false
+
 - name: Create EKS cluster ckan-v2 with eksctl
   command: >
     eksctl create cluster
@@ -9,6 +19,7 @@
     EKS_SUBNET_AF_SOUTH_1A: "{{ eks_subnet_af_south_1a }}"
     EKS_SUBNET_AF_SOUTH_1B: "{{ eks_subnet_af_south_1b }}"
     EKS_SUBNET_AF_SOUTH_1C: "{{ eks_subnet_af_south_1c }}"
+  when: eks_cluster_check.rc != 0
   become: false
 
 # 2. Generate a named kubeconfig file for ckan-v2
