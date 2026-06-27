@@ -11,9 +11,9 @@
   become: false
 
 - name: Create EKS cluster ckan-v2 with eksctl
-  command: >
-    eksctl create cluster
-    --config-file {{ playbook_dir }}/eksctl/cluster-config.yaml
+  shell: |
+    envsubst < {{ playbook_dir }}/eksctl/cluster-config.yaml \
+      | eksctl create cluster --config-file -
   environment:
     EKS_VPC_ID: "{{ eks_vpc_id }}"
     EKS_SUBNET_AF_SOUTH_1A: "{{ eks_subnet_af_south_1a }}"
