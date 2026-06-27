@@ -141,6 +141,7 @@
     --query 'SecurityGroups'
     --output json
   register: efs_sgs_result
+  changed_when: false
   become: false
 
 - name: Add ckan-v2 node SG to EFS mount target
