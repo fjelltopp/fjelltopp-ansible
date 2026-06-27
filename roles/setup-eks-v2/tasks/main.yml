@@ -230,8 +230,18 @@
     if isinstance(policy['Statement'], dict):
         policy['Statement'] = [policy['Statement']]
     new_arn = '{{ new_node_role_arn_result.stdout | trim }}'
+    giftless_bucket = '{{ giftless_s3_bucket }}'
+    giftless_resources = {f'arn:aws:s3:::{giftless_bucket}', f'arn:aws:s3:::{giftless_bucket}/*'}
     for stmt in policy['Statement']:
         if stmt.get('Effect') != 'Allow':
+            continue
+        action = stmt.get('Action', '')
+        if action != 's3:*':
+            continue
+        resources = stmt.get('Resource', [])
+        if isinstance(resources, str):
+            resources = [resources]
+        if not giftless_resources.issubset(set(resources)):
             continue
         principal = stmt.get('Principal', {})
         if isinstance(principal, dict) and 'AWS' in principal:
