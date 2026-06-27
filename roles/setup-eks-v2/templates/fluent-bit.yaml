@@ -333,9 +333,6 @@ spec:
         - name: varlog
           mountPath: /var/log
           readOnly: true
-        - name: varlibdockercontainers
-          mountPath: /var/lib/docker/containers
-          readOnly: true
         - name: fluent-bit-config
           mountPath: /fluent-bit/etc/
         - name: runlogjournal
