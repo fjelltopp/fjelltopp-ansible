@@ -90,7 +90,7 @@
 - name: Allow ckan-v2 nodes to access RDS security group
   amazon.aws.ec2_group:
     name: "{{ application_namespace }}-rds-sg"
-    description: "Access for EKS clusters"
+    description: "Access for {{ eks_cluster_name }} EKS cluster"
     vpc_id: "{{ eks_vpc_id }}"
     region: "{{ aws_region }}"
     purge_rules: false
