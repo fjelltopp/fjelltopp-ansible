@@ -9,7 +9,7 @@
       delegate_to: localhost
       changed_when: false
       become: false
-      tags: setup
+      tags: [always, setup]
 
     - name: Load VPC and EFS variables from .env
       set_fact:
