@@ -208,7 +208,7 @@
     --principal-arn "arn:aws:iam::{{ aws_account_id }}:role/github-actions"
   register: access_entry_result
   changed_when: access_entry_result.rc == 0
-  failed_when: access_entry_result.rc != 0 and 'ResourceInUseException' not in access_entry_result.stderr
+  failed_when: access_entry_result.rc != 0 and not ('ResourceInUseException' in access_entry_result.stderr and 'already' in access_entry_result.stderr)
   become: false
 
 - name: Associate cluster-admin policy with github-actions access entry
@@ -221,7 +221,7 @@
     --access-scope type=cluster
   register: access_policy_result
   changed_when: access_policy_result.rc == 0
-  failed_when: access_policy_result.rc != 0 and 'ResourceInUseException' not in access_policy_result.stderr
+  failed_when: access_policy_result.rc != 0 and not ('ResourceInUseException' in access_policy_result.stderr and 'already' in access_policy_result.stderr)
   become: false
 
 # 10. Update Giftless S3 bucket policy to include new node role ARN
