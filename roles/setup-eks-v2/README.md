@@ -20,6 +20,8 @@ One-time provisioning role for the `ckan-v2` EKS cluster. Idempotent — safe to
 
 - `eksctl` v0.228.0+ on `PATH`
 - `envsubst` (`apt-get install gettext` or `brew install gettext`)
+- `aws` CLI v2 on `PATH` (used directly for EKS, EFS, and STS calls)
+- `helm` v3 on `PATH` (required by `kubernetes.core.helm` tasks)
 - AWS credentials with the `github-actions-eks-provisioning` role (or equivalent — see `dms-infrastructure/docs/iam-roles.md`)
 - VPC and subnet IDs available as environment variables (loaded from `.env` in the CI workflow)
 
