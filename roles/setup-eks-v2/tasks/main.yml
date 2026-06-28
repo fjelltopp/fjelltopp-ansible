@@ -199,7 +199,32 @@
   changed_when: false
   become: false
 
-# 9. Update Giftless S3 bucket policy to include new node role ARN
+# 9. Grant the deploy IAM role cluster-admin access via EKS Access Entries API
+- name: Grant github-actions role EKS access entry
+  command: >
+    aws eks create-access-entry
+    --cluster-name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+    --principal-arn "arn:aws:iam::{{ aws_account_id }}:role/github-actions"
+  register: access_entry_result
+  changed_when: access_entry_result.rc == 0
+  failed_when: access_entry_result.rc != 0 and not ('resourceinuseexception' in (access_entry_result.stderr | lower) and 'already exists' in (access_entry_result.stderr | lower))
+  become: false
+
+- name: Associate cluster-admin policy with github-actions access entry
+  command: >
+    aws eks associate-access-policy
+    --cluster-name "{{ eks_cluster_name_v2 }}"
+    --region "{{ aws_region }}"
+    --principal-arn "arn:aws:iam::{{ aws_account_id }}:role/github-actions"
+    --policy-arn arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+    --access-scope type=cluster
+  register: access_policy_result
+  changed_when: access_policy_result.rc == 0
+  failed_when: access_policy_result.rc != 0 and not ('resourceinuseexception' in (access_policy_result.stderr | lower) and 'already associated' in (access_policy_result.stderr | lower))
+  become: false
+
+# 10. Update Giftless S3 bucket policy to include new node role ARN
 - name: Update Giftless S3 bucket policy to include new node role ARN
   when: use_giftless | bool
   become: false
