@@ -66,10 +66,11 @@ The playbook's `pre_tasks` load these from the shell environment (sourced from `
 Run via the `setup_eks_v2.yml` playbook (which is triggered by the `Setup EKS v2 (ckan-v2)` GitHub Actions workflow in `dms-infrastructure`):
 
 ```bash
-ansible-playbook -i inventory/dms_dev setup_eks_v2.yml -e "aws_region=af-south-1"
+# Run from the fjelltopp-ansible directory; inventory lives in the parent dms-infrastructure repo
+ansible-playbook -i ../inventory/<environment> setup_eks_v2.yml -e "aws_region=af-south-1"
 ```
 
-The playbook uses `connection: local` — the inventory is used only for group_vars, not to connect to remote hosts.
+Replace `<environment>` with the target inventory directory (e.g. `dms_dev`, `dms_prod`). The playbook uses `connection: local` — the inventory is used only for group_vars, not to connect to remote hosts.
 
 ## First-time account notes
 
