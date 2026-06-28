@@ -32,7 +32,9 @@ One-time provisioning role for the `ckan-v2` EKS cluster. Idempotent — safe to
 | `eks_cluster_name` | Name of the existing (old) cluster — used to find the shared RDS SG and EFS by tag |
 | `application_namespace` | Kubernetes/app namespace prefix (e.g. `dms-dev`) — used to find the RDS security group |
 | `eks_vpc_id` | VPC ID for the cluster |
-| `eks_subnet_af_south_1a/b/c` | Subnet IDs for each AZ |
+| `eks_subnet_af_south_1a` | Subnet ID for `af-south-1a` |
+| `eks_subnet_af_south_1b` | Subnet ID for `af-south-1b` |
+| `eks_subnet_af_south_1c` | Subnet ID for `af-south-1c` |
 | `eks_efs_ip` | IP address of the EFS mount target to grant access to |
 | `use_giftless` | Boolean — whether to update the Giftless S3 bucket policy |
 | `giftless_s3_bucket` | S3 bucket name for Giftless (required if `use_giftless` is true) |
