@@ -10,9 +10,11 @@ One-time provisioning role for the `ckan-v2` EKS cluster. Idempotent — safe to
 4. **Updates the RDS security group** to allow the new cluster nodes inbound on port 5432
 5. **Updates the EFS mount target** to allow the new cluster nodes access
 6. **Attaches `eks-secrets-access-policy`** to the node group IAM role
-7. **Grants the `github-actions` deploy role** cluster-admin access via the EKS Access Entries API (no `aws-auth` ConfigMap editing required)
-8. **Updates the Giftless S3 bucket policy** to allow the new node role to read/write objects (skipped if `use_giftless` is false)
-9. **Deploys cluster add-ons** via Helm: Fluent-bit (CloudWatch logs), Reloader, NFS subdir provisioner (EFS StorageClass), NGINX ingress controller, cert-manager
+7. **Updates the Giftless S3 bucket policy** to allow the new node role to read/write objects (skipped if `use_giftless` is false)
+8. **Creates the `amazon-cloudwatch` namespace** in the new cluster
+9. **Deploys Fluent-bit** via Kubernetes manifests (CloudWatch log forwarding)
+10. **Deploys Reloader** via Helm
+11. **Deploys the NFS subdir external provisioner** via Helm (creates the `efs-client` StorageClass backed by EFS)
 
 ## Prerequisites
 
