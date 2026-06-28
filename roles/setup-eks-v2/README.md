@@ -31,14 +31,26 @@ One-time provisioning role for the `ckan-v2` EKS cluster. Idempotent — safe to
 |---|---|
 | `eks_cluster_name` | Name of the existing (old) cluster — used to find the shared RDS SG and EFS by tag |
 | `application_namespace` | Kubernetes/app namespace prefix (e.g. `dms-dev`) — used to find the RDS security group |
-| `eks_vpc_id` | VPC ID for the cluster |
-| `eks_subnet_af_south_1a` | Subnet ID for `af-south-1a` |
-| `eks_subnet_af_south_1b` | Subnet ID for `af-south-1b` |
-| `eks_subnet_af_south_1c` | Subnet ID for `af-south-1c` |
-| `eks_efs_ip` | IP address of the EFS mount target to grant access to |
 | `use_giftless` | Boolean — whether to update the Giftless S3 bucket policy |
 | `giftless_s3_bucket` | S3 bucket name for Giftless (required if `use_giftless` is true) |
-| `aws_region` | AWS region (e.g. `af-south-1`) |
+
+### Required (from environment variables)
+
+The playbook's `pre_tasks` load these from the shell environment (sourced from `dms-infrastructure/.env` in CI):
+
+| Environment variable | Ansible variable | Description |
+|---|---|---|
+| `EKS_VPC_ID` | `eks_vpc_id` | VPC ID for the cluster |
+| `EKS_SUBNET_AF_SOUTH_1A` | `eks_subnet_af_south_1a` | Subnet ID for `af-south-1a` |
+| `EKS_SUBNET_AF_SOUTH_1B` | `eks_subnet_af_south_1b` | Subnet ID for `af-south-1b` |
+| `EKS_SUBNET_AF_SOUTH_1C` | `eks_subnet_af_south_1c` | Subnet ID for `af-south-1c` |
+| `EKS_EFS_IP` | `eks_efs_ip` | IP address of the EFS mount target to grant access to |
+
+### Required (passed as extra vars)
+
+| Variable | Description |
+|---|---|
+| `aws_region` | AWS region (e.g. `af-south-1`) — pass via `-e aws_region=<region>` |
 
 ### Defaults
 
