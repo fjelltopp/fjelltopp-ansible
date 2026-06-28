@@ -58,7 +58,7 @@ The playbook's `pre_tasks` load these from the shell environment (sourced from `
 
 | Variable | Default | Description |
 |---|---|---|
-| `eks_cluster_name_v2` | `ckan-v2` | Name of the new cluster to provision |
+| `eks_cluster_name_v2` | `ckan-v2` | Name of the new cluster to provision — **do not change**: the playbook asserts this must be `ckan-v2` to match `eksctl/cluster-config.yaml` |
 | `cloudwatch_logs_retention` | `30` | CloudWatch log retention in days |
 
 ## Usage
