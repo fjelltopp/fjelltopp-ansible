@@ -208,7 +208,7 @@
     --principal-arn "arn:aws:iam::{{ aws_account_id }}:role/github-actions"
   register: access_entry_result
   changed_when: access_entry_result.rc == 0
-  failed_when: access_entry_result.rc != 0 and not ('ResourceInUseException' in access_entry_result.stderr and 'already exists' in (access_entry_result.stderr | lower))
+  failed_when: access_entry_result.rc != 0 and not ('resourceinuseexception' in (access_entry_result.stderr | lower) and 'already exists' in (access_entry_result.stderr | lower))
   become: false
 
 - name: Associate cluster-admin policy with github-actions access entry
