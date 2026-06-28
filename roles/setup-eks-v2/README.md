@@ -31,7 +31,7 @@ One-time provisioning role for the `ckan-v2` EKS cluster. Idempotent — safe to
 
 | Variable | Description |
 |---|---|
-| `eks_cluster_name` | Name of the existing (old) cluster — used to find the shared RDS SG and EFS by tag |
+| `eks_cluster_name` | Name of the existing (old) cluster — used to find the shared EFS by tag (`{{ eks_cluster_name }}-efs`); also appears in the RDS SG description but the SG itself is looked up by `{{ application_namespace }}-rds-sg` |
 | `application_namespace` | Kubernetes/app namespace prefix (e.g. `dms-dev`) — used to find the RDS security group |
 | `use_giftless` | Boolean — whether to update the Giftless S3 bucket policy |
 | `giftless_s3_bucket` | S3 bucket name for Giftless (required if `use_giftless` is true) |
