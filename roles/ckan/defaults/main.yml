@@ -24,7 +24,7 @@ ckan_create_user_via_web: "true"
 ckan_collaborators: "false"
 ckan_default_views: "image_view text_view recline_view"
 
-restore_production_backup: false
+restore_production_backup: true
 
 ckan_extras: |-
 
