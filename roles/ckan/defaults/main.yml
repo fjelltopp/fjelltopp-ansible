@@ -9,7 +9,7 @@ ckan_backup_access_key: "dummyvalue"
 ckan_backup_access_secret: "dummyvalue"
 ckan_backup_s3: "dummyvalue"
 ckan_backup_sql_directory_s3: "dummyvalue"
-ckan_backup_postgres_version: 13
+ckan_backup_postgres_version: 14
 ckan_debug_enabled: "false"
 
 fjelltopp_base_image: "fjelltopp/ubuntu:base"
@@ -24,7 +24,7 @@ ckan_create_user_via_web: "true"
 ckan_collaborators: "false"
 ckan_default_views: "image_view text_view recline_view"
 
-restore_production_backup: false
+restore_production_backup: true
 
 ckan_extras: |-
 

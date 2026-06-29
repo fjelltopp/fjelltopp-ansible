@@ -47,7 +47,7 @@ error(){
   if [ -z "$SKIP_SLACK" ]; then
     slack_channel="sentry-prod" slack_notify "{{ application_namespace }} CKAN DB SQL backup" "RDS SQL DB backup has failed on: $1." "ERROR"
   fi
-  return 1
+  exit 1
 }
 
 get_s3_backup_vars(){
