@@ -48,7 +48,7 @@ error(){
   if [ -z "$SKIP_SLACK" ]; then
     slack_channel="sentry-stg" slack_notify "{{ application_namespace }} CKAN DB SQL restore" "RDS SQL dev DB restore has failed on: $1." "ERROR"
   fi
-  return 1
+  exit 1
 }
 
 get_s3_backup_vars(){
