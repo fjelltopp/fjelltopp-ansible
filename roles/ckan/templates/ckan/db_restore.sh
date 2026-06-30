@@ -10,7 +10,7 @@ date
 set -e
 
 apt update
-apt install awscli curl -y
+apt install awscli -y
 
 aws_cli=$(command -v aws)
 pgrestore=$(command -v pg_restore)
@@ -23,31 +23,8 @@ DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 cd "${DIR}" || exit 1
 
-if [ -z "$slack_channel" ]; then
-  slack_channel="infrastructure"
-fi
-slack_webhook="{{ ckan_slack_webhook }}"
-
-# run with "Message title" "Message body" "Message status" parameters, where
-# "Message status" "ERROR" will print message in red block, otherwise it's green
-slack_notify(){
-  local color='good'
-  if [ "${3}" == 'ERROR' ]; then
-      color='danger'
-  fi
-  echo 'Sending to '${slack_channel}'...'
-  local message="payload={\"channel\": \"#${slack_channel}\",\"attachments\":[{\"pretext\":\"${1}\",\"text\":\"${2}\",\"color\":\"${color}\"}]}"
-  # set variable SKIP_SLACK if you don't want to send any Slack notifications
-  if [ -z "$SKIP_SLACK" ]; then
-    curl -X POST --data-urlencode "${message}" "${slack_webhook}"
-  fi
-}
-
 error(){
   echo "${1} did fail, check your permissions"
-  if [ -z "$SKIP_SLACK" ]; then
-    slack_channel="sentry-stg" slack_notify "{{ application_namespace }} CKAN DB SQL restore" "RDS SQL dev DB restore has failed on: $1." "ERROR"
-  fi
   exit 1
 }
 
@@ -92,9 +69,6 @@ restore_backup(){
 }
 
 restore_backup || error restore_backup
-if [ -z "$SKIP_SLACK" ]; then
-  slack_notify "{{ application_namespace }} CKAN DB SQL restore" "{{ application_namespace }} CKAN DB SQL restore has finished" "OK"
-fi
 echo "Time finished: "
 date
 
