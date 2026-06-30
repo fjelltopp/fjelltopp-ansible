@@ -14,6 +14,7 @@ metadata:
   name: restore-ckan-db
 spec:
   schedule: "17 5 * * *"
+  suspend: true
   jobTemplate:
     spec:
       template:
@@ -27,7 +28,7 @@ spec:
               - name: POSTGRES_PASSWORD
                 value: "{{ lookup('aws_secret', application_namespace + '_rds_admin_pw' , region = aws_region ) }}"
             name: ckan-db-restore
-            image: postgres:13
+            image: postgres:{{ ckan_backup_postgres_version }}
             command: ['bash', '-c']
             args:
               - bash /tmp/ckan_db_restore.sh
