@@ -61,6 +61,8 @@ restore_backup(){
   fi
   copy_from_s3 "$DATE"-ckandb.sql.custom "$TEMP_BACKUP_LOCATION"/"$DATE"-ckandb.sql.custom ||  error "transferring CKAN sql backup"
   copy_from_s3 "$DATE"-datastoredb.sql.custom "$TEMP_BACKUP_LOCATION"/"$DATE"-datastoredb.sql.custom ||  error "transferring Datastore sql backup"
+  [ -s "$TEMP_BACKUP_LOCATION/$DATE-ckandb.sql.custom" ] || error "CKAN backup file is empty — aborting before drop"
+  [ -s "$TEMP_BACKUP_LOCATION/$DATE-datastoredb.sql.custom" ] || error "Datastore backup file is empty — aborting before drop"
   run_dbcleanup
   run_pgrestore "$TEMP_BACKUP_LOCATION"/"$DATE"-ckandb.sql.custom ckan ||  error "restoring CKAN DB sql backup"
   run_pgrestore "$TEMP_BACKUP_LOCATION"/"$DATE"-datastoredb.sql.custom datastore ||  error "restoring Datastore DB sql backup"
