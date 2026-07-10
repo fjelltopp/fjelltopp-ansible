@@ -14,7 +14,8 @@ apt install awscli -y
 
 aws_cli=$(command -v aws)
 pgdump=$(command -v pg_dump)
-export AWS_REGION="eu-west-1"
+export AWS_REGION="{{ aws_region }}"
+export AWS_DEFAULT_REGION="{{ aws_region }}"
 export AWS_ACCESS_KEY_ID="{{ ckan_backup_access_key }}"
 export AWS_SECRET_ACCESS_KEY="{{ ckan_backup_access_secret }}"
 TEMP_BACKUP_LOCATION=/tmp/ckan_backup
