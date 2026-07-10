@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ckan-storage-backup
+data:
+  storage_backup.sh: "{{ lookup('template', 'templates/ckan/storage_backup.sh') | b64encode }}"
+type: Opaque
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-ckan-storage
+spec:
+  schedule: "17 2 * * *"
+  suspend: true
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ckan-storage-backup
+            image: amazon/aws-cli:latest
+            command: ['bash', '-c']
+            args:
+              - bash /tmp/storage_backup.sh
+            volumeMounts:
+              - mountPath: /tmp/storage_backup.sh
+                name: ckan-storage-backup
+                readOnly: true
+                subPath: storage_backup.sh
+              - mountPath: /var/lib/ckan/storage
+                name: ckan-storage
+                readOnly: true
+          restartPolicy: Never
+          volumes:
+            - secret:
+                secretName: ckan-storage-backup
+              name: ckan-storage-backup
+            - name: ckan-storage
+              persistentVolumeClaim:
+                claimName: ckan-storage
+      backoffLimit: 1
