@@ -72,7 +72,6 @@
       - ckandb_job.yaml
       # - shell.yml # only for dev
       - solr.yaml
-      - datapusher.yaml
       - redis.yaml
       - giftless.yaml
       - ckan_volumes.yaml
