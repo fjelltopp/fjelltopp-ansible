@@ -19,6 +19,8 @@ spec:
     spec:
       template:
         spec:
+          securityContext:
+            fsGroup: 900
           containers:
           - name: ckan-storage-restore
             image: amazon/aws-cli:latest
