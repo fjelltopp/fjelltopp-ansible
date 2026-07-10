@@ -215,7 +215,7 @@
     - db_backup_cronjob.yaml
     - storage_backup_cronjob.yaml
 
-- name: Setup db restore job
+- name: Setup restore jobs
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
