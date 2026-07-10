@@ -21,7 +21,7 @@ spec:
         spec:
           containers:
           - name: ckan-storage-backup
-            image: amazon/aws-cli:latest
+            image: amazon/aws-cli:{{ ckan_awscli_image_tag }}
             command: ['bash', '-c']
             args:
               - bash /tmp/storage_backup.sh
