@@ -126,6 +126,15 @@
     msg: "No EFS found with tag Name={{ eks_cluster_name }}-efs. Ensure the EFS exists before running this role."
   when: efs_info.efs | length == 0
 
+- name: Enable AWS Backup on EFS
+  command: >
+    aws efs put-backup-policy
+    --region "{{ aws_region }}"
+    --file-system-id "{{ efs_info.efs[0].file_system_id }}"
+    --backup-policy Status=ENABLED
+  changed_when: false
+  become: false
+
 - name: Get EFS mount target ID
   command: >
     aws efs describe-mount-targets
