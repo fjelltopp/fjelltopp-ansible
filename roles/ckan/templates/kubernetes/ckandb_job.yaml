@@ -28,7 +28,7 @@ spec:
               value: "{{ ckan_rds_admin_pw }}"
 
           name: ckan-db-init
-          image: postgres:13
+          image: postgres:{{ ckan_backup_postgres_version }}
           command: ['bash', '-c']
           args:
             - bash /tmp/ckan_db_bootstrap.sh
