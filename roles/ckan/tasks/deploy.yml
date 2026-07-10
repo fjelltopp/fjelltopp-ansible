@@ -118,7 +118,6 @@
   become: false
   with_items:
     - solr.yaml
-    - datapusher.yaml
     - redis.yaml
     - giftless.yaml
     - giftless_ingress.yaml
