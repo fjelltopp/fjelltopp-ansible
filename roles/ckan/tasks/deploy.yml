@@ -213,8 +213,9 @@
   when: fjelltopp_env_type == 'prod'
   with_items:
     - db_backup_cronjob.yaml
+    - storage_backup_cronjob.yaml
 
-- name: Setup db restore job
+- name: Setup restore jobs
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
@@ -224,6 +225,7 @@
   when: fjelltopp_env_type != 'prod' and restore_production_backup
   with_items:
     - db_restore_cronjob.yaml
+    - storage_restore_cronjob.yaml
 
 - name: Check if CKAN returns 200 (20 tries, 60 sec interval)
   uri:
