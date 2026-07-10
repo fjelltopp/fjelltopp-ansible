@@ -62,8 +62,6 @@ spec:
 {% if fjelltopp_env_type == 'local' %}
       initContainers:
         - env:
-            - name: CKAN_DATAPUSHER_URL
-              value: "{{ ckan_datapusher_url }}"
             - name: CKAN_DATASTORE_READ_URL
               value: "{{ ckan_datastore_read_url }}"
             - name: CKAN_DATASTORE_WRITE_URL
@@ -128,8 +126,6 @@ spec:
 {% endif %}
       containers:
         - env:
-            - name: CKAN_DATAPUSHER_URL
-              value: {{ ckan_datapusher_url }}
             - name: CKAN_DATASTORE_READ_URL
               value: {{ ckan_datastore_read_url }}
             - name: CKAN_DATASTORE_WRITE_URL
