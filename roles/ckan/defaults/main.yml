@@ -10,7 +10,7 @@ ckan_backup_access_secret: "dummyvalue"
 ckan_backup_s3: "dummyvalue"
 ckan_backup_sql_directory_s3: "dummyvalue"
 ckan_backup_postgres_version: 14
-ckan_awscli_image_tag: "2"
+ckan_awscli_image_tag: "latest"
 ckan_debug_enabled: "false"
 
 fjelltopp_base_image: "fjelltopp/ubuntu:base"
