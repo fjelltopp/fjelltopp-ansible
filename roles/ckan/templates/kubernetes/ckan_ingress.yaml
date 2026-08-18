@@ -16,6 +16,13 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: 100m
+{% if ckan_ingress_limit_rps %}
+    # See ckan-ingress below — same rationale applies to /api/* traffic,
+    # which hits the same uwsgi worker pool and would otherwise bypass
+    # the limit entirely when basic_http_auth splits it into this ingress.
+    nginx.ingress.kubernetes.io/limit-rps: "{{ ckan_ingress_limit_rps }}"
+    nginx.ingress.kubernetes.io/limit-connections: "{{ ckan_ingress_limit_connections }}"
+{% endif %}
 spec:
   rules:
     - host: "{{ ckan_fqdn }}"
