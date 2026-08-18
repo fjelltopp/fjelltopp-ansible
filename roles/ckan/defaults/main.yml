@@ -3,6 +3,15 @@ basic_http_auth: false
 # defaults file for ckan
 ckan_pod_replicas_nr: 1
 
+ckan_uwsgi_processes: 4
+ckan_uwsgi_threads: 2
+
+# Per-source-IP request/connection caps on the ckan ingress. Unset (empty)
+# by default to preserve existing behaviour for consumers of this role;
+# set ckan_ingress_limit_rps to enable.
+ckan_ingress_limit_rps: ""
+ckan_ingress_limit_connections: 20
+
 ckan_slack_webhook: "dummyvalue"
 ckan_backup_bucket_name: "dummyvalue"
 ckan_backup_access_key: "dummyvalue"
