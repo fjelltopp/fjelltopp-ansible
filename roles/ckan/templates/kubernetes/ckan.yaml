@@ -183,9 +183,9 @@ spec:
             # hung/dead process. An HTTP check on status_show queues behind
             # regular app traffic in the same uwsgi worker pool, so under a
             # request burst the probe times out and kubelet kills a pod that
-            # is merely busy, not broken. Readiness stays HTTP-based below,
-            # since failing readiness just pulls the pod from rotation
-            # instead of restarting it.
+            # is merely busy, not broken. The readinessProbe above stays
+            # HTTP-based, since failing readiness just pulls the pod from
+            # rotation instead of restarting it.
             tcpSocket:
               port: 5000
             initialDelaySeconds: 10
