@@ -12,6 +12,11 @@ ckan_uwsgi_threads: 2
 ckan_ingress_limit_rps: ""
 ckan_ingress_limit_connections: 20
 
+# Cluster Autoscaler, deployed once per EKS cluster (skipped for local/
+# minikube). Version tracks the cluster's k8s minor version — see
+# https://github.com/kubernetes/autoscaler/releases for compatible tags.
+cluster_autoscaler_image_tag: "v1.36.0"
+
 ckan_slack_webhook: "dummyvalue"
 ckan_backup_bucket_name: "dummyvalue"
 ckan_backup_access_key: "dummyvalue"
