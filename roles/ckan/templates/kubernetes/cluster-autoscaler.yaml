@@ -168,3 +168,4 @@ spec:
         - name: ssl-certs
           hostPath:
             path: /etc/ssl/certs/ca-bundle.crt
+            type: File
