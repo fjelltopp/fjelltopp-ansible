@@ -258,3 +258,21 @@ spec:
 status:
   loadBalancer: {}
 {% endif %}
+
+---
+# Protects the single ckan replica from voluntary disruption (cluster
+# autoscaler scale-down, kubectl drain) — without this, scaling a node
+# down evicts the sole pod with no replacement ready, causing a real
+# user-facing gap (nginx has zero backends) until it reschedules and
+# starts elsewhere. Deployment rolling updates are unaffected: they
+# replace pods directly via the ReplicaSet controller, not the Eviction
+# API this budget governs.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ckan
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ckan
