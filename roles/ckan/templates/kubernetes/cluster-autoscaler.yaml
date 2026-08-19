@@ -136,6 +136,7 @@ spec:
       # directly to the ckan-workers node role, mutating actions scoped to
       # ASGs tagged k8s.io/cluster-autoscaler/<cluster>=owned.
       serviceAccountName: cluster-autoscaler
+      priorityClassName: system-cluster-critical
       containers:
         - image: "registry.k8s.io/autoscaling/cluster-autoscaler:{{ cluster_autoscaler_image_tag }}"
           name: cluster-autoscaler
