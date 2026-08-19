@@ -42,6 +42,22 @@
     - nginx-ingress-tls-elb_v1_0_0.yaml
   when: ckan_tls_name is defined
 
+# Cluster-wide (one per EKS cluster, not per app namespace) — idempotent to
+# re-apply from every environment's deploy. Requires the ckan-workers node
+# role to already have the ckan-v2-cluster-autoscaler IAM policy attached
+# (done once, out of band — see fjelltopp-ansible#<PR> for the policy JSON);
+# the ASG is auto-discovered via tags eksctl already sets on node group
+# creation (k8s.io/cluster-autoscaler/enabled, k8s.io/cluster-autoscaler/<cluster>).
+- name: Deploy Cluster Autoscaler
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'templates/kubernetes/{{ item }}') | from_yaml_all|list }}"
+    kubeconfig: "{{ kubeconfig }}"
+  become: false
+  with_items:
+    - cluster-autoscaler.yaml
+  when: fjelltopp_env_type != 'local'
+
 - name: Patch Minikube ingress
   kubernetes.core.k8s:
     state: patched

@@ -21,6 +21,15 @@ managedNodeGroups:
     maxSize: 3
     desiredCapacity: 1
     amiFamily: AmazonLinux2023
+    # eksctl auto-tags the backing ASG with k8s.io/cluster-autoscaler/enabled
+    # and k8s.io/cluster-autoscaler/<cluster-name>=owned on creation, which
+    # Cluster Autoscaler (deployed by the ckan role) relies on for
+    # auto-discovery. If this node group is ever recreated, the node role
+    # also needs the ckan-v2-cluster-autoscaler IAM policy re-attached —
+    # done manually, not via withAddonPolicies, since eksctl's built-in
+    # `autoScaler: true` shorthand grants unscoped SetDesiredCapacity/
+    # TerminateInstanceInAutoScalingGroup on *any* ASG; the policy actually
+    # attached is scoped to ASGs tagged k8s.io/cluster-autoscaler/<cluster>=owned.
     iam:
       withAddonPolicies:
         cloudWatch: true
