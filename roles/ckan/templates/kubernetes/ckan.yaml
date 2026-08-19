@@ -258,3 +258,16 @@ spec:
 status:
   loadBalancer: {}
 {% endif %}
+
+---
+# Stops the autoscaler/drain from evicting the sole ckan pod. Doesn't
+# affect Deployment rolling updates (those don't go through Eviction).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ckan
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ckan
