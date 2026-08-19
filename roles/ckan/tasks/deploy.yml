@@ -43,11 +43,10 @@
   when: ckan_tls_name is defined
 
 # Cluster-wide (one per EKS cluster, not per app namespace) — idempotent to
-# re-apply from every environment's deploy. Requires the ckan-workers node
-# role to already have the ckan-v2-cluster-autoscaler IAM policy attached
-# (done once, out of band — see fjelltopp-ansible#<PR> for the policy JSON);
-# the ASG is auto-discovered via tags eksctl already sets on node group
-# creation (k8s.io/cluster-autoscaler/enabled, k8s.io/cluster-autoscaler/<cluster>).
+# re-apply from every environment's deploy. Requires the node role IAM
+# policy declared in eksctl/cluster-config.yaml (iam.attachPolicyARNs); the
+# ASG is auto-discovered via tags eksctl already sets on node group creation
+# (k8s.io/cluster-autoscaler/enabled, k8s.io/cluster-autoscaler/<cluster>).
 - name: Deploy Cluster Autoscaler
   kubernetes.core.k8s:
     state: present
