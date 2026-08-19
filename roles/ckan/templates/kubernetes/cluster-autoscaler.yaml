@@ -154,7 +154,7 @@ spec:
             - --skip-nodes-with-system-pods=false
             - --balance-similar-node-groups
             - --expander=least-waste
-            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/{{ eks_cluster_name }}
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/{{ eks_cluster_name_v2 }}
           env:
             - name: AWS_REGION
               value: "{{ aws_region }}"
