@@ -22,6 +22,6 @@
   lineinfile:
     path: "/etc/hosts"
     regexp: "{{ app_fqdn }}"
-    line: "{{ cluster_ip }} {{ app_fqdn }}"
+    line: "127.0.0.1 {{ app_fqdn }}"
     state: present
     backup: yes
