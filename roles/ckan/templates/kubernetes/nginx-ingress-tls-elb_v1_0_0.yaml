@@ -58,6 +58,18 @@ data:
       default $remote_addr;
     }
     limit_req_zone $ckan_client_subnet_16 zone=ckan_subnet_16:10m rate={{ ckan_ingress_limit_subnet_rps | default(20) }}r/s;
+    # TRANSITIONAL: this ConfigMap is cluster-wide (shared by dev and
+    # prod), but each environment's Ingress objects are redeployed
+    # independently by separate ansible runs. The validating admission
+    # webhook rejects any Ingress patch whose *merged* cluster-wide nginx
+    # config references an undefined zone — so removing ckan_subnet_24
+    # here in the same change that renamed it broke every Ingress apply
+    # (dev and prod alike) until every namespace's Ingress objects picked
+    # up the ckan_subnet_16 rename, which is impossible one environment
+    # at a time. Keep this old zone name defined (aliased to the same
+    # map) until both dms_dev and dms_prod have been redeployed with the
+    # ckan_subnet_16 annotation, then remove it in a follow-up PR.
+    limit_req_zone $ckan_client_subnet_16 zone=ckan_subnet_24:10m rate={{ ckan_ingress_limit_subnet_rps | default(20) }}r/s;
   proxy: {{ eks_vpc_cidr_block }}
   use-forwarded-headers: 'true'
 
