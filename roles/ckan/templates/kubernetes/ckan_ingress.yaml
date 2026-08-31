@@ -22,6 +22,8 @@ metadata:
     # the limit entirely when basic_http_auth splits it into this ingress.
     nginx.ingress.kubernetes.io/limit-rps: "{{ ckan_ingress_limit_rps }}"
     nginx.ingress.kubernetes.io/limit-connections: "{{ ckan_ingress_limit_connections }}"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      limit_req zone=ckan_subnet_24 burst={{ (ckan_ingress_limit_subnet_rps | default(20)) * 2 }} nodelay;
 {% endif %}
 spec:
   rules:
@@ -58,6 +60,13 @@ metadata:
     # including unrelated readiness/liveness checks, behind it.
     nginx.ingress.kubernetes.io/limit-rps: "{{ ckan_ingress_limit_rps }}"
     nginx.ingress.kubernetes.io/limit-connections: "{{ ckan_ingress_limit_connections }}"
+    # Per-/24-subnet cap on top of the per-IP one above. Catches scrapers
+    # that rotate through many source IPs in the same cloud range, where
+    # no single IP crosses the per-IP limit but the subnet's aggregate
+    # volume does. See the ckan_subnet_24 zone in the ingress-nginx
+    # controller's ConfigMap (nginx-ingress-tls-elb_v1_0_0.yaml).
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      limit_req zone=ckan_subnet_24 burst={{ (ckan_ingress_limit_subnet_rps | default(20)) * 2 }} nodelay;
 {% endif %}
 {% if basic_http_auth %}
     # Basic http auth

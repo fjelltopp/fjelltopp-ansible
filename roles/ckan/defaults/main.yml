@@ -11,6 +11,10 @@ ckan_uwsgi_threads: 2
 # set ckan_ingress_limit_rps to enable.
 ckan_ingress_limit_rps: ""
 ckan_ingress_limit_connections: 20
+# Per-/24-subnet request rate, applied alongside the per-IP cap above
+# whenever ckan_ingress_limit_rps is set. Only matters if the two ever
+# need to move independently; the default keeps today's tuning.
+ckan_ingress_limit_subnet_rps: 20
 
 # Cluster Autoscaler, deployed once per EKS cluster (skipped for local/
 # minikube). Version tracks the cluster's k8s minor version — see

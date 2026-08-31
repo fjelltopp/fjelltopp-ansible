@@ -43,6 +43,16 @@ data:
       listen 2443;
       return 308 https://$host$request_uri;
     }
+    # Per-/24-subnet request rate limiting. Complements per-IP limiting
+    # (see ckan_ingress_limit_rps) against scrapers that rotate through
+    # many source IPs in the same cloud provider's range — no single IP
+    # crosses a per-IP threshold, but the subnet's aggregate volume does.
+    # $remote_addr is the real client IP here (use-forwarded-headers below).
+    map $remote_addr $ckan_client_subnet_24 {
+      "~(?P<subnet>\d+\.\d+\.\d+)\.\d+$" $subnet;
+      default $remote_addr;
+    }
+    limit_req_zone $ckan_client_subnet_24 zone=ckan_subnet_24:10m rate={{ ckan_ingress_limit_subnet_rps | default(20) }}r/s;
   proxy: {{ eks_vpc_cidr_block }}
   use-forwarded-headers: 'true'
 
