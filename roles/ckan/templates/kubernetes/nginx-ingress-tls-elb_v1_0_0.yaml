@@ -43,16 +43,21 @@ data:
       listen 2443;
       return 308 https://$host$request_uri;
     }
-    # Per-/24-subnet request rate limiting. Complements per-IP limiting
+    # Per-/16-subnet request rate limiting. Complements per-IP limiting
     # (see ckan_ingress_limit_rps) against scrapers that rotate through
-    # many source IPs in the same cloud provider's range — no single IP
-    # crosses a per-IP threshold, but the subnet's aggregate volume does.
-    # $remote_addr is the real client IP here (use-forwarded-headers below).
-    map $remote_addr $ckan_client_subnet_24 {
-      "~(?P<subnet>\d+\.\d+\.\d+)\.\d+$" $subnet;
+    # many source IPs in the same cloud provider's range — no single IP,
+    # and not even every individual /24, crosses a per-IP/per-/24
+    # threshold, but a cloud provider's /16 aggregate volume does.
+    # Widened from /24 after live monitoring showed synchronized bursts
+    # spread thinly across several /24s within the same /16 (e.g.
+    # 43.119.100.0/24 + 43.119.104.0/24 both Alibaba Cloud) still got
+    # through a /24-scoped limit. $remote_addr is the real client IP
+    # here (use-forwarded-headers below).
+    map $remote_addr $ckan_client_subnet_16 {
+      "~(?P<subnet>\d+\.\d+)\.\d+\.\d+$" $subnet;
       default $remote_addr;
     }
-    limit_req_zone $ckan_client_subnet_24 zone=ckan_subnet_24:10m rate={{ ckan_ingress_limit_subnet_rps | default(20) }}r/s;
+    limit_req_zone $ckan_client_subnet_16 zone=ckan_subnet_16:10m rate={{ ckan_ingress_limit_subnet_rps | default(20) }}r/s;
   proxy: {{ eks_vpc_cidr_block }}
   use-forwarded-headers: 'true'
 
